@@ -1,0 +1,12 @@
+Source: ros-humble-proxsuite
+Section: misc
+Priority: optional
+Maintainer: Justin Carpentier <justin.carpentier@inria.fr>
+Build-Depends: debhelper (>= 9.0.0), cmake, doxygen, git, libeigen3-dev, libmatio-dev <!nocheck>, libsimde-dev, python3-numpy, python3-scipy, ros-humble-ros-workspace
+Homepage: https://simple-robotics.github.io/proxsuite
+Standards-Version: 3.9.2
+
+Package: ros-humble-proxsuite
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libeigen3-dev, libsimde-dev, python3-numpy, python3-scipy, ros-humble-ros-workspace
+Description: The Advanced Proximal Optimization Toolbox
