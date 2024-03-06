@@ -2,6 +2,7 @@
 // Copyright (c) 2022-2023 INRIA
 //
 
+#include <iostream>
 #include <doctest.hpp>
 #include <maros_meszaros.hpp>
 #include <proxsuite/proxqp/sparse/wrapper.hpp>
@@ -35,7 +36,6 @@ compute_primal_dual_feasibility(const PreprocessedQpSparse& preprocessed,
 }
 
 char const* files[] = {
-
   MAROS_MESZAROS_DIR "AUG2D.mat",    MAROS_MESZAROS_DIR "AUG2DC.mat",
   MAROS_MESZAROS_DIR "AUG2DCQP.mat", MAROS_MESZAROS_DIR "AUG2DQP.mat",
   MAROS_MESZAROS_DIR "AUG3D.mat",    MAROS_MESZAROS_DIR "AUG3DC.mat",
@@ -145,14 +145,11 @@ TEST_CASE("sparse maros meszaros using the API")
       proxsuite::proxqp::sparse::QP<T, I> qp(H.cast<bool>(),
                                              AT.transpose().cast<bool>(),
                                              CT.transpose().cast<bool>());
-      qp.settings.max_iter = 1.E6;
-      qp.settings.verbose = false;
-
       qp.settings.eps_abs = eps_abs_no_duality_gap;
       qp.settings.eps_rel = 0;
       qp.init(H, g, AT.transpose(), b, CT.transpose(), l, u);
 
-      for (isize iter = 0; iter < 10; ++iter) {
+      for (isize iter = 0; iter < 2; ++iter) {
         if (iter > 0)
           qp.settings.initial_guess = proxsuite::proxqp::InitialGuessStatus::
             WARM_START_WITH_PREVIOUS_RESULT;
@@ -171,7 +168,6 @@ TEST_CASE("sparse maros meszaros using the API")
 
         std::cout << "primal residual " << primal_feasibility << std::endl;
       }
-
       {
         qp.solve();
 

@@ -22,7 +22,8 @@ endif()
 macro(proxsuite_test name path)
   add_executable(test-cpp-${name} ${path})
   doctest_discover_tests(test-cpp-${name})
-  target_link_libraries(test-cpp-${name} proxsuite doctest proxsuite-test-util)
+  target_link_libraries(test-cpp-${name} PUBLIC proxsuite doctest
+                                                proxsuite-test-util)
   target_compile_definitions(test-cpp-${name}
                              PRIVATE PROBLEM_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
   add_dependencies(build_tests test-cpp-${name})
@@ -32,14 +33,20 @@ proxsuite_test(dense_ruiz_equilibration src/dense_ruiz_equilibration.cpp)
 proxsuite_test(dense_qp_eq src/dense_qp_eq.cpp)
 proxsuite_test(dense_qp_with_eq_and_in src/dense_qp_with_eq_and_in.cpp)
 proxsuite_test(dense_qp_unconstrained src/dense_unconstrained_qp.cpp)
-proxsuite_test(sparse_ruiz_equilibration src/sparse_ruiz_equilibration.cpp)
-proxsuite_test(sparse_qp src/sparse_qp.cpp)
+proxsuite_test(dense_backward src/dense_backward.cpp)
 proxsuite_test(dense_qp_wrapper src/dense_qp_wrapper.cpp)
 proxsuite_test(dense_qp_solve src/dense_qp_solve.cpp)
+proxsuite_test(sparse_ruiz_equilibration src/sparse_ruiz_equilibration.cpp)
+proxsuite_test(sparse_qp src/sparse_qp.cpp)
 proxsuite_test(sparse_qp_wrapper src/sparse_qp_wrapper.cpp)
 proxsuite_test(sparse_qp_solve src/sparse_qp_solve.cpp)
 proxsuite_test(sparse_factorization src/sparse_factorization.cpp)
 proxsuite_test(cvxpy src/cvxpy.cpp)
+
+if(BUILD_WITH_OPENMP_SUPPORT)
+  proxsuite_test(parallel src/parallel_qp_solve.cpp)
+  target_link_libraries(test-cpp-parallel PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 # Test serialization
 macro(ADD_TEST_CFLAGS target flag)
@@ -66,6 +73,13 @@ endif()
 
 if(BUILD_PYTHON_INTERFACE)
   file(GLOB_RECURSE ${PROJECT_NAME}_PYTHON_UNITTEST *.py)
+
+  if((CMAKE_BUILD_TYPE STREQUAL "Debug" AND MSVC) OR NOT
+                                                     BUILD_WITH_OPENMP_SUPPORT)
+    list_filter("${${PROJECT_NAME}_PYTHON_UNITTEST}" "parallel_qp_solve"
+                ${PROJECT_NAME}_PYTHON_UNITTEST)
+  endif()
+
   foreach(TEST_FILE ${${PROJECT_NAME}_PYTHON_UNITTEST})
     get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
     string(REGEX REPLACE "${PROJECT_SOURCE_DIR}/" "" TEST_FILE ${TEST_FILE})

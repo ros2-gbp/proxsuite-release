@@ -1,10 +1,12 @@
 #
-# Copyright (c) 2022, INRIA
+# Copyright (c) 2022-2023, INRIA
 #
 import proxsuite
 import numpy as np
 import scipy.sparse as spa
 import unittest
+
+np.printoptions(precision=16)
 
 
 def normInf(x):
@@ -14,7 +16,37 @@ def normInf(x):
         return np.linalg.norm(x, np.inf)
 
 
-def generate_mixed_qp(n, seed=1):
+def generate_mixed_qp(n, seed=1, reg=0.01):
+    """
+    Generate sparse problem in dense QP format
+    """
+    np.random.seed(seed)
+
+    m = int(n / 4) + int(n / 4)
+    # m  = n
+    n_eq = int(n / 4)
+    n_in = int(n / 4)
+
+    P = spa.random(
+        n, n, density=0.075, data_rvs=np.random.randn, format="csc"
+    ).toarray()
+    P = (P + P.T) / 2.0
+
+    s = max(np.absolute(np.linalg.eigvals(P)))
+    P += (abs(s) + reg) * spa.eye(n)
+    P = spa.coo_matrix(P)
+    # print("sparsity of P : {}".format((P.nnz) / (n**2)))
+    q = np.random.randn(n)
+    A = spa.random(m, n, density=0.15, data_rvs=np.random.randn, format="csc").toarray()
+    v = np.random.randn(n)  # Fictitious solution
+    delta = np.random.rand(m)  # To get inequality
+    u = A @ v
+    l = -1.0e20 * np.ones(m)
+
+    return P.toarray(), q, A[:n_eq, :], u[:n_eq], A[n_in:, :], u[n_in:], l[n_in:]
+
+
+def generate_mixed_qp_with_box(n, seed=1):
     """
     Generate sparse problem in dense QP format
     """
@@ -33,19 +65,77 @@ def generate_mixed_qp(n, seed=1):
     s = max(np.absolute(np.linalg.eigvals(P)))
     P += (abs(s) + 1e-02) * spa.eye(n)
     P = spa.coo_matrix(P)
-    print("sparsity of P : {}".format((P.nnz) / (n**2)))
+    # print("sparsity of P : {}".format((P.nnz) / (n**2)))
     q = np.random.randn(n)
     A = spa.random(m, n, density=0.15, data_rvs=np.random.randn, format="csc").toarray()
     v = np.random.randn(n)  # Fictitious solution
     delta = np.random.rand(m)  # To get inequality
     u = A @ v
     l = -1.0e20 * np.ones(m)
+    delta_box = np.random.rand(n)
+    u_box = v + delta_box
+    l_box = v - delta_box
 
-    return P.toarray(), q, A[:n_eq, :], u[:n_eq], A[n_in:, :], u[n_in:], l[n_in:]
+    return (
+        P.toarray(),
+        q,
+        A[:n_eq, :],
+        u[:n_eq],
+        A[n_in:, :],
+        u[n_in:],
+        l[n_in:],
+        u_box,
+        l_box,
+    )
 
 
 class DenseqpWrapper(unittest.TestCase):
     # TESTS OF GENERAL METHODS OF THE API
+    def test_case_deterministic_behavior(self):
+        print("------------------------test the result is deterministic")
+        n = 100
+        H, g, A, b, C, u, l = generate_mixed_qp(n)
+        n_eq = A.shape[0]
+        n_in = C.shape[0]
+
+        qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in)
+        qp.settings.eps_abs = 1.0e-9
+        qp.settings.verbose = False
+        qp.init(
+            H=H,
+            g=np.asfortranarray(g),
+            A=A,
+            b=np.asfortranarray(b),
+            C=C,
+            l=np.asfortranarray(l),
+            u=np.asfortranarray(u),
+        )
+        qp.solve()
+        x_prev = np.copy(qp.results.x)
+        y_prev = np.copy(qp.results.y)
+        z_prev = np.copy(qp.results.z)
+        for i in range(20):
+            qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in)
+            qp.settings.eps_abs = 1.0e-9
+            qp.settings.verbose = False
+            qp.init(
+                H=H,
+                g=np.asfortranarray(g),
+                A=A,
+                b=np.asfortranarray(b),
+                C=C,
+                l=np.asfortranarray(l),
+                u=np.asfortranarray(u),
+            )
+            qp.solve()
+
+            print(f"{normInf(x_prev - qp.results.x)=}")
+            print(f"{normInf(y_prev - qp.results.y)=}")
+            print(f"{normInf(z_prev - qp.results.z)=}")
+
+            assert normInf(x_prev - qp.results.x) <= 1e-14
+            assert normInf(y_prev - qp.results.y) <= 1e-14
+            assert normInf(z_prev - qp.results.z) <= 1e-14
 
     def test_case_update_rho(self):
         print(
@@ -1653,7 +1743,6 @@ class DenseqpWrapper(unittest.TestCase):
         n_in = C.shape[0]
         qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in)
         qp.settings.eps_abs = 1.0e-9
-        qp.settings.verbose = True
         qp.settings.initial_guess = proxsuite.proxqp.InitialGuess.NO_INITIAL_GUESS
         qp.init(
             H,
@@ -4474,6 +4563,345 @@ class DenseqpWrapper(unittest.TestCase):
                 qp.results.info.setup_time, qp.results.info.solve_time
             )
         )
+
+    def test_z_ordering_with_box_constraints_interface(self):
+        print(
+            "------------------------test check ordering of z when there are box constraints"
+        )
+
+        n = 50
+        n_test = 1000
+        eps = 1.0e-9
+        # inequality and box constraints case
+        for i in range(n_test):
+            H, g, A, b, C, u, l, u_box, l_box = generate_mixed_qp_with_box(n, i)
+            n_eq = A.shape[0]
+            n_in = C.shape[0]
+
+            qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in, True)
+            qp.init(H, g, A, b, C, l, u, l_box, u_box)
+            qp.settings.eps_abs = eps
+            qp.solve()
+
+            dua_res = normInf(
+                H @ qp.results.x
+                + g
+                + A.transpose() @ qp.results.y
+                + C.transpose() @ qp.results.z[:n_in]
+                + qp.results.z[n_in:]
+            )
+            pri_res = max(
+                normInf(A @ qp.results.x - b),
+                normInf(
+                    np.maximum(C @ qp.results.x - u, 0)
+                    + np.minimum(C @ qp.results.x - l, 0)
+                ),
+                normInf(
+                    np.maximum(qp.results.x - u_box, 0)
+                    + np.minimum(qp.results.x - l_box, 0)
+                ),
+            )
+            assert dua_res <= eps
+            assert pri_res <= eps
+        # no inequality and box constraints case
+        for i in range(n_test):
+            H, g, A, b, C, u, l, u_box, l_box = generate_mixed_qp_with_box(n, i)
+            n_eq = A.shape[0]
+            n_in = 0
+            C = np.zeros((n_in, n))
+            u = np.zeros(n_in)
+            l = np.zeros(n_in)
+
+            qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in, True)
+            qp.init(H, g, A, b, C, l, u, l_box, u_box)
+            qp.settings.eps_abs = eps
+            qp.solve()
+
+            dua_res = normInf(
+                H @ qp.results.x
+                + g
+                + A.transpose() @ qp.results.y
+                + C.transpose() @ qp.results.z[:n_in]
+                + qp.results.z[n_in:]
+            )
+            pri_res = max(
+                normInf(A @ qp.results.x - b),
+                normInf(
+                    np.maximum(C @ qp.results.x - u, 0)
+                    + np.minimum(C @ qp.results.x - l, 0)
+                ),
+                normInf(
+                    np.maximum(qp.results.x - u_box, 0)
+                    + np.minimum(qp.results.x - l_box, 0)
+                ),
+            )
+            assert dua_res <= eps
+            assert pri_res <= eps
+
+        # # no inequality, no equalities and box constraints case
+        for i in range(n_test):
+            H, g, A, b, C, u, l, u_box, l_box = generate_mixed_qp_with_box(n, i)
+            n_eq = 0
+            n_in = 0
+            C = np.zeros((n_in, n))
+            u = np.zeros(n_in)
+            l = np.zeros(n_in)
+            A = np.zeros((n_eq, n))
+            b = np.zeros(n_eq)
+
+            qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in, True)
+            qp.init(H, g, A, b, C, l, u, l_box, u_box)
+            qp.settings.eps_abs = eps
+            qp.solve()
+
+            dua_res = normInf(
+                H @ qp.results.x
+                + g
+                + A.transpose() @ qp.results.y
+                + C.transpose() @ qp.results.z[:n_in]
+                + qp.results.z[n_in:]
+            )
+            pri_res = max(
+                normInf(A @ qp.results.x - b),
+                normInf(
+                    np.maximum(C @ qp.results.x - u, 0)
+                    + np.minimum(C @ qp.results.x - l, 0)
+                ),
+                normInf(
+                    np.maximum(qp.results.x - u_box, 0)
+                    + np.minimum(qp.results.x - l_box, 0)
+                ),
+            )
+            assert dua_res <= eps
+            assert pri_res <= eps
+        """
+    """
+
+    def test_updates_with_box_constraints_interface(self):
+        print(
+            "------------------------test check updates work when there are box constraints"
+        )
+        n = 50
+        H, g, A, b, C, u, l = generate_mixed_qp(n)
+        eps = 1.0e-9
+        n_eq = A.shape[0]
+        n_in = C.shape[0]
+        u_box = np.ones(n) * 100
+        l_box = -np.ones(n) * 100
+
+        qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in, True)
+        qp.init(H, g, A, b, C, l, u, l_box, u_box)
+        qp.settings.eps_abs = eps
+        qp.solve()
+
+        dua_res = normInf(
+            H @ qp.results.x
+            + g
+            + A.transpose() @ qp.results.y
+            + C.transpose() @ qp.results.z[:n_in]
+            + qp.results.z[n_in:]
+        )
+        pri_res = max(
+            normInf(A @ qp.results.x - b),
+            normInf(
+                np.maximum(C @ qp.results.x - u, 0)
+                + np.minimum(C @ qp.results.x - l, 0)
+            ),
+            normInf(
+                np.maximum(qp.results.x - u_box, 0)
+                + np.minimum(qp.results.x - l_box, 0)
+            ),
+        )
+        assert dua_res <= eps
+        assert pri_res <= eps
+        u_box += 10
+        l_box -= 10
+
+        qp.update(l=l, u=u, u_box=u_box, l_box=l_box)
+        qp.solve()
+
+        dua_res = normInf(
+            H @ qp.results.x
+            + g
+            + A.transpose() @ qp.results.y
+            + C.transpose() @ qp.results.z[:n_in]
+            + qp.results.z[n_in:]
+        )
+        pri_res = max(
+            normInf(A @ qp.results.x - b),
+            normInf(
+                np.maximum(C @ qp.results.x - u, 0)
+                + np.minimum(C @ qp.results.x - l, 0)
+            ),
+            normInf(
+                np.maximum(qp.results.x - u_box, 0)
+                + np.minimum(qp.results.x - l_box, 0)
+            ),
+        )
+        assert dua_res <= eps
+        assert pri_res <= eps
+
+    def test_dense_infeasibility_solving(
+        self,
+    ):
+        print(
+            "------------------------dense random strongly convex qp with inequality constraints, test infeasibility solving"
+        )
+        n = 20
+        for i in range(20):
+            H, g, A, b, C, u, l = generate_mixed_qp(n, i)
+            b += 10.0  ## create infeasible pbls
+            u -= 100.0
+            n_eq = A.shape[0]
+            n_in = C.shape[0]
+            qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in)
+            qp.settings.eps_abs = 1.0e-5
+            qp.settings.eps_primal_inf = 1.0e-4
+            qp.settings.verbose = False
+            qp.settings.primal_infeasibility_solving = True
+            qp.settings.initial_guess = proxsuite.proxqp.InitialGuess.NO_INITIAL_GUESS
+            qp.init(
+                H,
+                np.asfortranarray(g),
+                A,
+                np.asfortranarray(b),
+                C,
+                np.asfortranarray(l),
+                np.asfortranarray(u),
+            )
+            qp.solve()
+            dua_res = normInf(
+                H @ qp.results.x
+                + g
+                + A.transpose() @ qp.results.y
+                + C.transpose() @ qp.results.z
+            )
+            ones = A.T @ np.ones(n_eq) + C.T @ np.ones(n_in)
+
+            scaled_eps = normInf(ones) * qp.settings.eps_abs
+            pri_res = normInf(
+                A.T @ (A @ qp.results.x - b)
+                + C.T
+                @ (
+                    np.maximum(C @ qp.results.x - u, 0)
+                    + np.minimum(C @ qp.results.x - l, 0)
+                )
+            )
+            assert dua_res <= qp.settings.eps_abs
+            assert pri_res <= scaled_eps
+
+    def test_minimal_eigenvalue_estimation_nonconvex_eigen_option(
+        self,
+    ):
+        print(
+            "------------------------dense non convex qp with inequality constraints, estimate minimal eigenvalue with eigen method"
+        )
+        n = 50
+        tol = 1.0e-3
+        for i in range(50):
+            H, g, A, b, C, u, l = generate_mixed_qp(n, i, -0.01)
+            n_eq = A.shape[0]
+            n_in = C.shape[0]
+            qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in)
+            qp.settings.verbose = False
+            qp.settings.initial_guess = proxsuite.proxqp.InitialGuess.NO_INITIAL_GUESS
+            estimate_minimal_eigen_value = (
+                proxsuite.proxqp.dense.estimate_minimal_eigen_value_of_symmetric_matrix(
+                    H,
+                    proxsuite.proxqp.EigenValueEstimateMethodOption.ExactMethod,
+                    1.0e-6,
+                    10000,
+                )
+            )
+            vals, _ = spa.linalg.eigs(H, which="SR")
+            min_eigenvalue = float(np.min(vals))
+            qp.init(
+                H,
+                np.asfortranarray(g),
+                A,
+                np.asfortranarray(b),
+                C,
+                np.asfortranarray(l),
+                np.asfortranarray(u),
+                manual_minimal_H_eigenvalue=estimate_minimal_eigen_value,
+            )
+            assert (
+                np.abs(min_eigenvalue - qp.results.info.minimal_H_eigenvalue_estimate)
+                <= tol
+            )
+
+    def test_minimal_eigenvalue_estimation_nonconvex_manual_option(
+        self,
+    ):
+        print(
+            "------------------------dense non convex qp with inequality constraints, estimate minimal eigenvalue with manual option"
+        )
+        n = 50
+        tol = 1.0e-3
+        for i in range(50):
+            H, g, A, b, C, u, l = generate_mixed_qp(n, i, -0.01)
+            n_eq = A.shape[0]
+            n_in = C.shape[0]
+            qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in)
+            qp.settings.verbose = False
+            qp.settings.initial_guess = proxsuite.proxqp.InitialGuess.NO_INITIAL_GUESS
+            vals, _ = spa.linalg.eigs(H, which="SR")
+            min_eigenvalue = float(np.min(vals))
+            qp.init(
+                H,
+                np.asfortranarray(g),
+                A,
+                np.asfortranarray(b),
+                C,
+                np.asfortranarray(l),
+                np.asfortranarray(u),
+                manual_minimal_H_eigenvalue=min_eigenvalue,
+            )
+            assert (
+                np.abs(min_eigenvalue - qp.results.info.minimal_H_eigenvalue_estimate)
+                <= tol
+            )
+
+    def test_minimal_eigenvalue_estimation_nonconvex_power_iter_option(
+        self,
+    ):
+        print(
+            "------------------------dense non convex qp with inequality constraints, estimate minimal eigenvalue with power iter option"
+        )
+        n = 50
+        tol = 1.0e-3
+        for i in range(50):
+            H, g, A, b, C, u, l = generate_mixed_qp(n, i, -0.01)
+            n_eq = A.shape[0]
+            n_in = C.shape[0]
+
+            qp = proxsuite.proxqp.dense.QP(n, n_eq, n_in)
+            qp.settings.verbose = False
+            qp.settings.initial_guess = proxsuite.proxqp.InitialGuess.NO_INITIAL_GUESS
+            estimate_minimal_eigen_value = (
+                proxsuite.proxqp.dense.estimate_minimal_eigen_value_of_symmetric_matrix(
+                    H,
+                    proxsuite.proxqp.EigenValueEstimateMethodOption.PowerIteration,
+                    1.0e-6,
+                    10000,
+                )
+            )
+            vals, _ = spa.linalg.eigs(H, which="SR")
+            min_eigenvalue = float(np.min(vals))
+            qp.init(
+                H,
+                np.asfortranarray(g),
+                A,
+                np.asfortranarray(b),
+                C,
+                np.asfortranarray(l),
+                np.asfortranarray(u),
+                manual_minimal_H_eigenvalue=estimate_minimal_eigen_value,
+            )
+            assert (
+                np.abs(min_eigenvalue - qp.results.info.minimal_H_eigenvalue_estimate)
+                <= tol
+            )
 
 
 if __name__ == "__main__":

@@ -8,6 +8,10 @@ jobs:
         env:
           - {name: "Noetic / Debug", ROS_DISTRO: noetic, CMAKE_BUILD_TYPE: Debug, VECTORIZATION_SUPPORT: OFF}
           - {name: "Noetic / Release", ROS_DISTRO: noetic, CMAKE_BUILD_TYPE: Release,  VECTORIZATION_SUPPORT: OFF}
+          - {name: "Iron / Debug", ROS_DISTRO: iron, CMAKE_BUILD_TYPE: Debug, VECTORIZATION_SUPPORT: OFF}
+          - {name: "Iron / Release", ROS_DISTRO: iron, CMAKE_BUILD_TYPE: Release,  VECTORIZATION_SUPPORT: OFF}
+          - {name: "Iron / Debug / Vectorization", ROS_DISTRO: iron, CMAKE_BUILD_TYPE: Debug, VECTORIZATION_SUPPORT: ON}
+          - {name: "Iron / Release / Vectorization", ROS_DISTRO: iron, CMAKE_BUILD_TYPE: Release,  VECTORIZATION_SUPPORT: ON}
           - {name: "Humble / Debug / Vectorization", ROS_DISTRO: humble, CMAKE_BUILD_TYPE: Debug, VECTORIZATION_SUPPORT: ON}
           - {name: "Humble / Release / Vectorization", ROS_DISTRO: humble, CMAKE_BUILD_TYPE: Release,  VECTORIZATION_SUPPORT: ON}
           - {name: "Humble / Pre-Release", ROS_DISTRO: humble, PRERELEASE: true}
@@ -32,3 +36,18 @@ jobs:
       # Run industrial_ci
       - uses: 'ros-industrial/industrial_ci@master'
         env: ${{ matrix.env }}
+
+
+  check:
+    if: always()
+    name: check-ci-linux-ros
+
+    needs:
+    - CI
+
+    runs-on: Ubuntu-latest
+    steps:
+    - name: Decide whether the needed jobs succeeded or failed
+      uses: re-actors/alls-green@release/v1
+      with:
+        jobs: ${{ toJSON(needs) }}

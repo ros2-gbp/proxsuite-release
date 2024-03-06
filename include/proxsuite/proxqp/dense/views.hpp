@@ -53,8 +53,8 @@ struct FnInfo<auto(Args...)->Ret_>
   template auto __VA_ARGS__(                                                   \
     LDLT_IMPL_GET_PARAMS(NParams, __VA_ARGS__)                                 \
       typename ::proxsuite::proxqp::detail::FnInfo<                            \
-        decltype(__VA_ARGS__)>::template Arg<(NParams)-1>)                     \
-    ->typename ::proxsuite::proxqp::detail::FnInfo<decltype(__VA_ARGS__)>::Ret
+        decltype(__VA_ARGS__)>::template Arg<(NParams)-1>) ->                  \
+    typename ::proxsuite::proxqp::detail::FnInfo<decltype(__VA_ARGS__)>::Ret
 #define LDLT_EXPLICIT_TPL_DECL(NParams, ...)                                   \
   extern LDLT_EXPLICIT_TPL_DEF(NParams, __VA_ARGS__)
 
@@ -602,8 +602,7 @@ struct VectorView
                requires(LDLT_CONCEPT(eigen_vector_view<Vec, T>)),
                VEG_INLINE VectorView,
                (/*tag*/, FromEigen),
-               (vec, Vec const&))
-  noexcept
+               (vec, Vec const&)) noexcept
     : data(vec.data())
     , dim(vec.rows())
   {
@@ -648,8 +647,7 @@ struct VectorViewMut
                requires(LDLT_CONCEPT(eigen_vector_view_mut<Vec, T>)),
                VEG_INLINE VectorViewMut,
                (/*tag*/, FromEigen),
-               (vec, Vec&&))
-  noexcept
+               (vec, Vec&&)) noexcept
     : data(vec.data())
     , dim(vec.rows())
   {
@@ -704,8 +702,7 @@ struct StridedVectorView
                requires(LDLT_CONCEPT(eigen_strided_vector_view<Vec, T>)),
                VEG_INLINE StridedVectorView,
                (/*tag*/, FromEigen),
-               (vec, Vec const&))
-  noexcept
+               (vec, Vec const&)) noexcept
     : data(vec.data())
     , dim(vec.rows())
     , stride(vec.innerStride())
@@ -763,8 +760,7 @@ struct StridedVectorViewMut
                requires(LDLT_CONCEPT(eigen_strided_vector_view_mut<Vec, T>)),
                VEG_INLINE StridedVectorViewMut,
                (/*tag*/, FromEigen),
-               (vec, Vec&&))
-  noexcept
+               (vec, Vec&&)) noexcept
     : data(vec.data())
     , dim(vec.rows())
     , stride(vec.innerStride())
@@ -834,8 +830,7 @@ struct MatrixView
                         eigen::GetLayout<unref<Mat>>::value == L),
                VEG_INLINE MatrixView,
                (/*tag*/, FromEigen),
-               (mat, Mat const&))
-  noexcept
+               (mat, Mat const&)) noexcept
     : data(mat.data())
     , rows(mat.rows())
     , cols(mat.cols())
@@ -941,8 +936,7 @@ struct MatrixViewMut
                         eigen::GetLayout<unref<Mat>>::value == L),
                VEG_INLINE MatrixViewMut,
                (/*tag*/, FromEigen),
-               (mat, Mat&&))
-  noexcept
+               (mat, Mat&&)) noexcept
     : data(mat.data())
     , rows(mat.rows())
     , cols(mat.cols())
@@ -1367,6 +1361,9 @@ struct QpViewBox
   MatrixView<Scalar, layout> C;
   VectorView<Scalar> u;
   VectorView<Scalar> l;
+  VectorView<Scalar> I;
+  VectorView<Scalar> u_box;
+  VectorView<Scalar> l_box;
 };
 
 template<typename T>
@@ -1404,13 +1401,15 @@ struct QpViewBoxMut
   MatrixViewMut<Scalar, layout> C;
   VectorViewMut<Scalar> u;
   VectorViewMut<Scalar> l;
+  VectorViewMut<Scalar> I;
+  VectorViewMut<Scalar> l_box;
+  VectorViewMut<Scalar> u_box;
 
   VEG_INLINE constexpr auto as_const() const noexcept -> QpViewBox<Scalar>
   {
-    return {
-      H.as_const(), g.as_const(), A.as_const(), b.as_const(),
-      C.as_const(), u.as_const(), l.as_const(),
-    };
+    return { H.as_const(),     g.as_const(),    A.as_const(), b.as_const(),
+             C.as_const(),     u.as_const(),    l.as_const(), I.as_const(),
+             u_box.as_const(), l_box.as_const() };
   }
 };
 
