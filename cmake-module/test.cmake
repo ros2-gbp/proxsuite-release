@@ -49,7 +49,7 @@ if(NOT TARGET build_tests)
 endif()
 
 # Add new target 'run_tests' to improve integration with build tooling
-if(NOT CMAKE_GENERATOR MATCHES "Visual Studio" AND NOT TARGET run_tests)
+if(NOT CMAKE_GENERATOR MATCHES "Visual Studio|Xcode" AND NOT TARGET run_tests)
   add_custom_target(
     run_tests
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -V
@@ -142,10 +142,11 @@ macro(ADD_PYTHON_UNIT_TEST NAME SOURCE)
 
   set(MODULES "${ARGN}") # ARGN is not a variable
   foreach(MODULE_PATH IN LISTS MODULES)
-    list(APPEND PYTHONPATH "${CMAKE_BINARY_DIR}/${MODULE_PATH}")
-    if(CMAKE_GENERATOR MATCHES "Visual Studio")
+    if(CMAKE_GENERATOR MATCHES "Visual Studio|Xcode")
       list(APPEND PYTHONPATH "${CMAKE_BINARY_DIR}/${MODULE_PATH}/$<CONFIG>")
-    endif(CMAKE_GENERATOR MATCHES "Visual Studio")
+    else()
+      list(APPEND PYTHONPATH "${CMAKE_BINARY_DIR}/${MODULE_PATH}")
+    endif()
   endforeach(MODULE_PATH IN LISTS MODULES)
 
   if(DEFINED ENV{PYTHONPATH})

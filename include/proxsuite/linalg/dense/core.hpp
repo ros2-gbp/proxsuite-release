@@ -462,13 +462,13 @@ struct RowColAccessImpl<true>
 {
   template<typename T>
   using Col =
-    Eigen::Map<const_if<ptr_is_const<decltype(VEG_DECLVAL(T &&).data())>::value,
+    Eigen::Map<const_if<ptr_is_const<decltype(VEG_DECLVAL(T&&).data())>::value,
                         OwnedColVector<uncvref_t<T>>>,
                Eigen::Unaligned,
                Eigen::InnerStride<uncvref_t<T>::InnerStrideAtCompileTime>>;
   template<typename T>
   using Row =
-    Eigen::Map<const_if<ptr_is_const<decltype(VEG_DECLVAL(T &&).data())>::value,
+    Eigen::Map<const_if<ptr_is_const<decltype(VEG_DECLVAL(T&&).data())>::value,
                         OwnedRowVector<uncvref_t<T>>>,
                Eigen::Unaligned,
                Eigen::InnerStride<uncvref_t<T>::OuterStrideAtCompileTime>>;
@@ -503,13 +503,13 @@ struct RowColAccessImpl<false>
 {
   template<typename T>
   using Col =
-    Eigen::Map<const_if<ptr_is_const<decltype(VEG_DECLVAL(T &&).data())>::value,
+    Eigen::Map<const_if<ptr_is_const<decltype(VEG_DECLVAL(T&&).data())>::value,
                         OwnedColVector<uncvref_t<T>>>,
                Eigen::Unaligned,
                Eigen::InnerStride<uncvref_t<T>::OuterStrideAtCompileTime>>;
   template<typename T>
   using Row =
-    Eigen::Map<const_if<ptr_is_const<decltype(VEG_DECLVAL(T &&).data())>::value,
+    Eigen::Map<const_if<ptr_is_const<decltype(VEG_DECLVAL(T&&).data())>::value,
                         OwnedRowVector<uncvref_t<T>>>,
                Eigen::Unaligned,
                Eigen::InnerStride<uncvref_t<T>::InnerStrideAtCompileTime>>;

@@ -77,7 +77,7 @@ where $[z]_+$ and $[z]_-$ stand for the projection of z onto the positive and ne
 
 If if you don't want to pass through [ProxQP API](2-ProxQP_api.md), it is also possible to use one single solve function. We will show how to do so with examples.
 
-You just need to call a "solve" function with in entry the model of the convex QP you want to solve. We show you below examples in C++ and python for ProxQP sparse and dense backends. Note that the sparse and dense solvers take respectivaly entries in sparse and dense formats.
+You just need to call a "solve" function with in entry the model of the convex QP you want to solve. We show you below examples in C++ and python for ProxQP sparse and dense backends. Note that the sparse and dense solvers take respectivaly entries in sparse and dense formats. Note finally that the dense backend benefits from a feature enabling it to handle more efficiently box inequality constraints. We provide an example below as well of how using it (you can find more details about it in [ProxQP API](2-ProxQP_api.md)).
 
 <table class="manual">
   <tr>
@@ -160,3 +160,5 @@ Note that if some elements of your QP model are not defined (for example a QP wi
     </td>
   </tr>
 </table>
+
+Finally, note that you can also you ProxQP for solving QP with non convex quadratic. For doing so, you just need to provide to the solve function an estimate of the smallest eigenvalue of the quadratic cost H. The solver environment provides an independent function for estimating the minimal eigenvalue of a dense or sparse symmetric matrix. It is named "estimate_minimal_eigen_value_of_symmetric_matrix". You can find more details in [ProxQP API with examples](2-ProxQP_api.md) about the different other settings that can be used for setting other related parameters (e.g., for using a Power Iteration algorithm).
