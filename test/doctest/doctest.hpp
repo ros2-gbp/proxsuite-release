@@ -85,7 +85,7 @@
 #endif
 
 #define DOCTEST_COMPILER(MAJOR, MINOR, PATCH)                                  \
-  ((MAJOR)*10000000 + (MINOR)*100000 + (PATCH))
+  ((MAJOR) * 10000000 + (MINOR) * 100000 + (PATCH))
 
 // GCC/Clang and GCC/MSVC are mutually exclusive, but Clang/MSVC are not because
 // of clang-cl...
@@ -2629,9 +2629,7 @@ registerReporter(const char* name, int priority, bool isReporter)
   template<>                                                                   \
   struct iter<std::tuple<>>                                                    \
   {                                                                            \
-    iter(const char*, unsigned, int)                                           \
-    {                                                                          \
-    }                                                                          \
+    iter(const char*, unsigned, int) {}                                        \
   };                                                                           \
   }                                                                            \
   template<typename T>                                                         \
