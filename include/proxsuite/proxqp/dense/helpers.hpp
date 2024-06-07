@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2022 INRIA
+// Copyright (c) 2022-2023 INRIA
 //
 /**
  * @file helpers.hpp
@@ -15,12 +15,178 @@
 #include <proxsuite/proxqp/dense/preconditioner/ruiz.hpp>
 #include <chrono>
 #include <proxsuite/helpers/optional.hpp>
+#include <Eigen/Eigenvalues>
 
 namespace proxsuite {
 namespace proxqp {
 namespace dense {
 
+template<typename T,
+         typename MatIn,
+         typename VecIn1,
+         typename VecIn2,
+         typename VecIn3>
+T
+power_iteration(const Eigen::MatrixBase<MatIn>& H,
+                const Eigen::MatrixBase<VecIn1>& dw,
+                const Eigen::MatrixBase<VecIn2>& rhs,
+                const Eigen::MatrixBase<VecIn3>& err_v,
+                T power_iteration_accuracy,
+                isize nb_power_iteration)
+{
+  auto& dw_cc = dw.const_cast_derived();
+  auto& rhs_cc = rhs.const_cast_derived();
+  auto& err_v_cc = err_v.const_cast_derived();
+  // computes maximal eigen value of the bottom right matrix of the LDLT
+  isize dim = H.rows();
+  rhs_cc.setZero();
+  // stores eigenvector
+  rhs_cc.array() += 1. / std::sqrt(dim);
+  // stores Hx
+  dw_cc.noalias() = H.template selfadjointView<Eigen::Lower>() * rhs_cc; // Hx
+  T eig = 0;
+  for (isize i = 0; i < nb_power_iteration; i++) {
+
+    rhs_cc = dw_cc / dw_cc.norm();
+    dw_cc.noalias() = (H.template selfadjointView<Eigen::Lower>() * rhs_cc);
+    // calculate associated eigenvalue
+    eig = rhs.dot(dw_cc);
+    // calculate associated error
+    err_v_cc = dw_cc - eig * rhs_cc;
+    T err = proxsuite::proxqp::dense::infty_norm(err_v_cc);
+    // std::cout << "power iteration max: i " << i << " err " << err <<
+    // std::endl;
+    if (err <= power_iteration_accuracy) {
+      break;
+    }
+  }
+  return eig;
+}
+template<typename T,
+         typename MatIn,
+         typename VecIn1,
+         typename VecIn2,
+         typename VecIn3>
+T
+min_eigen_value_via_modified_power_iteration(
+  const Eigen::MatrixBase<MatIn>& H,
+  const Eigen::MatrixBase<VecIn1>& dw,
+  const Eigen::MatrixBase<VecIn2>& rhs,
+  const Eigen::MatrixBase<VecIn3>& err_v,
+  T max_eigen_value,
+  T power_iteration_accuracy,
+  isize nb_power_iteration)
+{
+  // performs power iteration on the matrix: max_eigen_value I - H
+  // estimates then the minimal eigenvalue with: minimal_eigenvalue =
+  // max_eigen_value - eig
+  auto& dw_cc = dw.const_cast_derived();
+  auto& rhs_cc = rhs.const_cast_derived();
+  auto& err_v_cc = err_v.const_cast_derived();
+  isize dim = H.rows();
+  rhs_cc.setZero();
+  // stores eigenvector
+  rhs_cc.array() += 1. / std::sqrt(dim);
+  // stores Hx
+  dw_cc.noalias() =
+    -(H.template selfadjointView<Eigen::Lower>() * rhs_cc); // Hx
+  dw_cc += max_eigen_value * rhs_cc;
+  T eig = 0;
+  for (isize i = 0; i < nb_power_iteration; i++) {
+
+    rhs_cc = dw_cc / dw_cc.norm();
+    dw_cc.noalias() = -(H.template selfadjointView<Eigen::Lower>() * rhs_cc);
+    dw_cc += max_eigen_value * rhs_cc;
+    // calculate associated eigenvalue
+    eig = rhs_cc.dot(dw_cc);
+    // calculate associated error
+    err_v_cc = dw_cc - eig * rhs_cc;
+    T err = proxsuite::proxqp::dense::infty_norm(err_v_cc);
+    // std::cout << "power iteration min: i " << i << " err " << err <<
+    // std::endl;
+    if (err <= power_iteration_accuracy) {
+      break;
+    }
+  }
+  T minimal_eigenvalue = max_eigen_value - eig;
+  return minimal_eigenvalue;
+}
 /////// SETUP ////////
+/*!
+ * Estimate minimal eigenvalue of a symmetric Matrix
+ * @param H symmetric matrix.
+ * @param EigenValueEstimateMethodOption
+ * @param power_iteration_accuracy power iteration algorithm accuracy tracked
+ * @param nb_power_iteration maximal number of power iteration executed
+ *
+ */
+template<typename T, typename MatIn>
+T
+estimate_minimal_eigen_value_of_symmetric_matrix(
+  const Eigen::MatrixBase<MatIn>& H,
+  EigenValueEstimateMethodOption estimate_method_option,
+  T power_iteration_accuracy,
+  isize nb_power_iteration)
+{
+  PROXSUITE_THROW_PRETTY(
+    (!H.isApprox(H.transpose(), std::numeric_limits<T>::epsilon())),
+    std::invalid_argument,
+    "H is not symmetric.");
+  if (H.size()) {
+    PROXSUITE_CHECK_ARGUMENT_SIZE(
+      H.rows(),
+      H.cols(),
+      "H has a number of rows different of the number of columns.");
+  }
+  isize dim = H.rows();
+  T res(0.);
+  switch (estimate_method_option) {
+    case EigenValueEstimateMethodOption::PowerIteration: {
+      Vec<T> dw(dim);
+      Vec<T> rhs(dim);
+      Vec<T> err(dim);
+      T dominant_eigen_value = power_iteration(
+        H, dw, rhs, err, power_iteration_accuracy, nb_power_iteration);
+      T min_eigenvalue =
+        min_eigen_value_via_modified_power_iteration(H,
+                                                     dw,
+                                                     rhs,
+                                                     err,
+                                                     dominant_eigen_value,
+                                                     power_iteration_accuracy,
+                                                     nb_power_iteration);
+      res = std::min(min_eigenvalue, dominant_eigen_value);
+    } break;
+    case EigenValueEstimateMethodOption::ExactMethod: {
+      Eigen::SelfAdjointEigenSolver<Mat<T>> es(H, Eigen::EigenvaluesOnly);
+      res = T(es.eigenvalues()[0]);
+    } break;
+  }
+  return res;
+}
+/////// SETUP ////////
+/*!
+ * Estimate H minimal eigenvalue
+ * @param settings solver settings
+ * @param results solver results.
+ * @param manual_minimal_H_eigenvalue minimal H eigenvalue estimate.
+ */
+template<typename T>
+void
+update_default_rho_with_minimal_Hessian_eigen_value(
+  optional<T> manual_minimal_H_eigenvalue,
+  Results<T>& results,
+  Settings<T>& settings)
+{
+  if (manual_minimal_H_eigenvalue != nullopt) {
+    settings.default_H_eigenvalue_estimate =
+      manual_minimal_H_eigenvalue.value();
+    results.info.minimal_H_eigenvalue_estimate =
+      settings.default_H_eigenvalue_estimate;
+  }
+  settings.default_rho += std::abs(results.info.minimal_H_eigenvalue_estimate);
+  results.info.rho = settings.default_rho;
+}
 /*!
  * Computes the equality constrained initial guess of a QP problem.
  *
@@ -35,6 +201,9 @@ void
 compute_equality_constrained_initial_guess(Workspace<T>& qpwork,
                                            const Settings<T>& qpsettings,
                                            const Model<T>& qpmodel,
+                                           const isize n_constraints,
+                                           const DenseBackend& dense_backend,
+                                           const HessianType& hessian_type,
                                            Results<T>& qpresults)
 {
 
@@ -46,6 +215,9 @@ compute_equality_constrained_initial_guess(Workspace<T>& qpwork,
     qpmodel,
     qpresults,
     qpwork,
+    n_constraints,
+    dense_backend,
+    hessian_type,
     T(1),
     qpmodel.dim + qpmodel.n_eq);
 
@@ -68,26 +240,48 @@ template<typename T>
 void
 setup_factorization(Workspace<T>& qpwork,
                     const Model<T>& qpmodel,
-                    Results<T>& qpresults)
+                    Results<T>& qpresults,
+                    const DenseBackend& dense_backend,
+                    const HessianType& hessian_type)
 {
 
   proxsuite::linalg::veg::dynstack::DynStackMut stack{
     proxsuite::linalg::veg::from_slice_mut,
     qpwork.ldl_stack.as_mut(),
   };
-
-  qpwork.kkt.topLeftCorner(qpmodel.dim, qpmodel.dim) = qpwork.H_scaled;
+  switch (hessian_type) {
+    case HessianType::Dense:
+      qpwork.kkt.topLeftCorner(qpmodel.dim, qpmodel.dim) = qpwork.H_scaled;
+      break;
+    case HessianType::Zero:
+      qpwork.kkt.topLeftCorner(qpmodel.dim, qpmodel.dim).setZero();
+      break;
+    case HessianType::Diagonal:
+      qpwork.kkt.topLeftCorner(qpmodel.dim, qpmodel.dim) = qpwork.H_scaled;
+      break;
+  }
   qpwork.kkt.topLeftCorner(qpmodel.dim, qpmodel.dim).diagonal().array() +=
     qpresults.info.rho;
-  qpwork.kkt.block(0, qpmodel.dim, qpmodel.dim, qpmodel.n_eq) =
-    qpwork.A_scaled.transpose();
-  qpwork.kkt.block(qpmodel.dim, 0, qpmodel.n_eq, qpmodel.dim) = qpwork.A_scaled;
-  qpwork.kkt.bottomRightCorner(qpmodel.n_eq, qpmodel.n_eq).setZero();
-  qpwork.kkt.diagonal()
-    .segment(qpmodel.dim, qpmodel.n_eq)
-    .setConstant(-qpresults.info.mu_eq);
-
-  qpwork.ldl.factorize(qpwork.kkt.transpose(), stack);
+  switch (dense_backend) {
+    case DenseBackend::PrimalDualLDLT:
+      qpwork.kkt.block(0, qpmodel.dim, qpmodel.dim, qpmodel.n_eq) =
+        qpwork.A_scaled.transpose();
+      qpwork.kkt.block(qpmodel.dim, 0, qpmodel.n_eq, qpmodel.dim) =
+        qpwork.A_scaled;
+      qpwork.kkt.bottomRightCorner(qpmodel.n_eq, qpmodel.n_eq).setZero();
+      qpwork.kkt.diagonal()
+        .segment(qpmodel.dim, qpmodel.n_eq)
+        .setConstant(-qpresults.info.mu_eq);
+      qpwork.ldl.factorize(qpwork.kkt.transpose(), stack);
+      break;
+    case DenseBackend::PrimalLDLT:
+      qpwork.kkt.noalias() += qpresults.info.mu_eq_inv *
+                              (qpwork.A_scaled.transpose() * qpwork.A_scaled);
+      qpwork.ldl.factorize(qpwork.kkt.transpose(), stack);
+      break;
+    case DenseBackend::Automatic:
+      break;
+  }
 }
 /*!
  * Performs the equilibration of the QP problem for reducing its
@@ -105,15 +299,18 @@ template<typename T>
 void
 setup_equilibration(Workspace<T>& qpwork,
                     const Settings<T>& qpsettings,
+                    const bool box_constraints,
+                    const HessianType hessian_type,
                     preconditioner::RuizEquilibration<T>& ruiz,
                     bool execute_preconditioner)
 {
 
   QpViewBoxMut<T> qp_scaled{
-    { from_eigen, qpwork.H_scaled }, { from_eigen, qpwork.g_scaled },
-    { from_eigen, qpwork.A_scaled }, { from_eigen, qpwork.b_scaled },
-    { from_eigen, qpwork.C_scaled }, { from_eigen, qpwork.u_scaled },
-    { from_eigen, qpwork.l_scaled }
+    { from_eigen, qpwork.H_scaled },     { from_eigen, qpwork.g_scaled },
+    { from_eigen, qpwork.A_scaled },     { from_eigen, qpwork.b_scaled },
+    { from_eigen, qpwork.C_scaled },     { from_eigen, qpwork.u_scaled },
+    { from_eigen, qpwork.l_scaled },     { from_eigen, qpwork.i_scaled },
+    { from_eigen, qpwork.l_box_scaled }, { from_eigen, qpwork.u_box_scaled },
   };
 
   proxsuite::linalg::veg::dynstack::DynStackMut stack{
@@ -122,8 +319,11 @@ setup_equilibration(Workspace<T>& qpwork,
   };
   ruiz.scale_qp_in_place(qp_scaled,
                          execute_preconditioner,
+                         qpsettings.primal_infeasibility_solving,
                          qpsettings.preconditioner_max_iter,
                          qpsettings.preconditioner_accuracy,
+                         hessian_type,
+                         box_constraints,
                          stack);
   qpwork.correction_guess_rhs_g = infty_norm(qpwork.g_scaled);
 }
@@ -178,8 +378,11 @@ update(optional<MatRef<T>> H,
        optional<MatRef<T>> C,
        optional<VecRef<T>> l,
        optional<VecRef<T>> u,
+       optional<VecRef<T>> l_box,
+       optional<VecRef<T>> u_box,
        Model<T>& model,
-       Workspace<T>& work)
+       Workspace<T>& work,
+       const bool box_constraints)
 {
   // check the model is valid
   if (g != nullopt) {
@@ -250,6 +453,15 @@ update(optional<MatRef<T>> H,
   if (l != nullopt) {
     model.l = l.value().eval();
   }
+  if (u_box != nullopt && box_constraints) {
+    model.u_box = u_box.value();
+  } // else qpmodel.u_box remains initialized to a matrix with zero elements or
+    // zero shape
+
+  if (l_box != nullopt && box_constraints) {
+    model.l_box = l_box.value();
+  } // else qpmodel.l_box remains initialized to a matrix with zero elements or
+    // zero shape
 
   if (H != nullopt || A != nullopt || C != nullopt) {
     work.refactorize = true;
@@ -264,7 +476,7 @@ update(optional<MatRef<T>> H,
   if (C != nullopt) {
     model.C = C.value();
   }
-  assert(model.is_valid());
+  assert(model.is_valid(box_constraints));
 }
 /*!
  * Setups the QP solver model.
@@ -295,12 +507,16 @@ setup( //
   optional<MatRef<T>> C,
   optional<VecRef<T>> l,
   optional<VecRef<T>> u,
+  optional<VecRef<T>> l_box,
+  optional<VecRef<T>> u_box,
   Settings<T>& qpsettings,
   Model<T>& qpmodel,
   Workspace<T>& qpwork,
   Results<T>& qpresults,
+  const bool box_constraints,
   preconditioner::RuizEquilibration<T>& ruiz,
-  PreconditionerStatus preconditioner_status)
+  PreconditionerStatus preconditioner_status,
+  const HessianType hessian_type)
 {
 
   switch (qpsettings.initial_guess) {
@@ -310,7 +526,7 @@ setup( //
       } else {
         qpresults.cleanup(qpsettings);
       }
-      qpwork.cleanup();
+      qpwork.cleanup(box_constraints);
       break;
     }
     case InitialGuessStatus::COLD_START_WITH_PREVIOUS_RESULT: {
@@ -320,7 +536,7 @@ setup( //
       } else {
         qpresults.cold_start(qpsettings);
       }
-      qpwork.cleanup();
+      qpwork.cleanup(box_constraints);
       break;
     }
     case InitialGuessStatus::NO_INITIAL_GUESS: {
@@ -329,7 +545,7 @@ setup( //
       } else {
         qpresults.cleanup(qpsettings);
       }
-      qpwork.cleanup();
+      qpwork.cleanup(box_constraints);
       break;
     }
     case InitialGuessStatus::WARM_START: {
@@ -340,13 +556,14 @@ setup( //
       } else {
         qpresults.cleanup(qpsettings);
       }
-      qpwork.cleanup();
+      qpwork.cleanup(box_constraints);
       break;
     }
     case InitialGuessStatus::WARM_START_WITH_PREVIOUS_RESULT: {
       if (qpwork.refactorize || qpwork.proximal_parameter_update) {
-        qpwork.cleanup(); // meaningful for when there is an upate of the model
-                          // and one wants to warm start with previous result
+        qpwork.cleanup(box_constraints); // meaningful for when there is an
+                                         // upate of the model and one wants to
+                                         // warm start with previous result
         qpwork.refactorize = true;
       }
       qpresults.cleanup_statistics();
@@ -384,9 +601,26 @@ setup( //
     qpmodel.l = l.value();
   } // else qpmodel.l remains initialized to a matrix with zero elements or zero
     // shape
-  assert(qpmodel.is_valid());
+  if (u_box != nullopt) {
+    qpmodel.u_box = u_box.value();
+  } // else qpmodel.u_box remains initialized to a matrix with zero elements or
+    // zero shape
 
-  qpwork.H_scaled = qpmodel.H;
+  if (l_box != nullopt) {
+    qpmodel.l_box = l_box.value();
+  } // else qpmodel.l_box remains initialized to a matrix with zero elements or
+    // zero shape
+  assert(qpmodel.is_valid(box_constraints));
+  switch (hessian_type) {
+    case HessianType::Zero:
+      break;
+    case HessianType::Dense:
+      qpwork.H_scaled = qpmodel.H;
+      break;
+    case HessianType::Diagonal:
+      qpwork.H_scaled = qpmodel.H;
+      break;
+  }
   qpwork.g_scaled = qpmodel.g;
   qpwork.A_scaled = qpmodel.A;
   qpwork.b_scaled = qpmodel.b;
@@ -401,19 +635,33 @@ setup( //
       .select(qpmodel.l,
               Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(qpmodel.n_in).array() -
                 T(1.E20));
+  if (box_constraints) {
+    qpwork.u_box_scaled =
+      (qpmodel.u_box.array() <= T(1.E20))
+        .select(qpmodel.u_box,
+                Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(qpmodel.dim).array() +
+                  T(1.E20));
+    qpwork.l_box_scaled =
+      (qpmodel.l_box.array() >= T(-1.E20))
+        .select(qpmodel.l_box,
+                Eigen::Matrix<T, Eigen::Dynamic, 1>::Zero(qpmodel.dim).array() -
+                  T(1.E20));
+  }
 
   qpwork.dual_feasibility_rhs_2 = infty_norm(qpmodel.g);
-
   switch (preconditioner_status) {
     case PreconditionerStatus::EXECUTE:
-      setup_equilibration(qpwork, qpsettings, ruiz, true);
+      setup_equilibration(
+        qpwork, qpsettings, box_constraints, hessian_type, ruiz, true);
       break;
     case PreconditionerStatus::IDENTITY:
-      setup_equilibration(qpwork, qpsettings, ruiz, false);
+      setup_equilibration(
+        qpwork, qpsettings, box_constraints, hessian_type, ruiz, false);
       break;
     case PreconditionerStatus::KEEP:
       // keep previous one
-      setup_equilibration(qpwork, qpsettings, ruiz, false);
+      setup_equilibration(
+        qpwork, qpsettings, box_constraints, hessian_type, ruiz, false);
       break;
   }
 }
