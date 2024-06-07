@@ -63,7 +63,7 @@ $$\begin{equation}\label{eq:approx_qp_sol_relative_criterion}
 \end{aligned}
 \end{equation}$$
 
-It is important to note that this stopping criterion on primal and dual residuals is not enough to guarantee that the returned solution satisfies all \eqref{qp:kkt} conditions. Indeed, as the problem has affine constraints and the objective is quadratic and convex, then as soon as the primal or the dual problem is feasible, then strong duality holds (see e.g., [Theorem 2](https://people.eecs.berkeley.edu/~elghaoui/Teaching/EE227A/lecture8.pdf) from L. El Ghaoui's lesson) and to satisfy all optimality conditions we need to add a third criterion on the *duality gap* $r_g$:
+It is important to note that this stopping criterion on primal and dual residuals is not enough to guarantee that the returned solution satisfies all \eqref{qp:kkt} conditions. Indeed, as the problem has affine constraints and the objective is quadratic and convex, then as soon as the primal or the dual problem is feasible, then strong duality holds (see e.g., [Theorem 2](https://people.eecs.berkeley.edu/~elghaoui/Teaching/EE227A/lecture8.pdf) from L. El Ghaoui's lesson) and to satisfy all optimality conditions we need to add a third criterion on the *duality gap* \f$r_g\f$:
 
 $$\begin{equation}\label{eq:approx_dg_sol}
 \begin{aligned}
@@ -71,13 +71,13 @@ $$\begin{equation}\label{eq:approx_dg_sol}
 \end{aligned}
 \end{equation}$$
 
-where $[z]_+$ and $[z]_-$ stand for the projection of z onto the positive and negative orthant. ProxQP provides the ``check_duality_gap`` option to include this duality gap in the stopping criterion. Note that it is disabled by default, as other solvers don't check in general this criterion. Enable this option if you want a stronger guarantee that your solution is optimal. ProxQP will then check the same termination condition as SCS (for more details see, e.g., SCS's [optimality conditions checks](https://www.cvxgrp.org/scs/algorithm/index.html#optimality-conditions) as well as [section 7.2](https://doi.org/10.1137/20M1366307) in the corresponding paper). The absolute and relative thresholds $\epsilon^{\text{gap}}_{\text{abs}}, \epsilon^{\text{gap}}_{\text{rel}}$ for the duality gap can differ from those $\epsilon_{\text{abs}}, \epsilon_{\text{rel}}$ for residuals because, contrary to residuals which result from an infinite norm, the duality gap scales with the square root of the problem dimension (thus it is numerically harder to achieve a given duality gap for larger problems). A recommended choice is $\epsilon^{\text{gap}}_{\text{abs}} = \epsilon_{\text{abs}} \sqrt{\max(n, n_{\text{eq}}, n_{\text{ineq}})}$. Note finally that meeting all residual and duality-gap criteria can be difficult for ill-conditioned problems.
+where \f$[z]_+\f$ and \f$[z]_-\f$ stand for the projection of z onto the positive and negative orthant. ProxQP provides the ``check_duality_gap`` option to include this duality gap in the stopping criterion. Note that it is disabled by default, as other solvers don't check in general this criterion. Enable this option if you want a stronger guarantee that your solution is optimal. ProxQP will then check the same termination condition as SCS (for more details see, e.g., SCS's [optimality conditions checks](https://www.cvxgrp.org/scs/algorithm/index.html#optimality-conditions) as well as [section 7.2](https://doi.org/10.1137/20M1366307) in the corresponding paper). The absolute and relative thresholds \f$\epsilon^{\text{gap}}_{\text{abs}}, \epsilon^{\text{gap}}_{\text{rel}}\f$ for the duality gap can differ from those \f$\epsilon_{\text{abs}}, \epsilon_{\text{rel}}\f$ for residuals because, contrary to residuals which result from an infinite norm, the duality gap scales with the square root of the problem dimension (thus it is numerically harder to achieve a given duality gap for larger problems). A recommended choice is \f$\epsilon^{\text{gap}}_{\text{abs}} = \epsilon_{\text{abs}} \sqrt{\max(n, n_{\text{eq}}, n_{\text{ineq}})}\f$. Note finally that meeting all residual and duality-gap criteria can be difficult for ill-conditioned problems.
 
 \section OverviewAsingleSolveFunction A single solve function for dense and sparse backends
 
 If if you don't want to pass through [ProxQP API](2-ProxQP_api.md), it is also possible to use one single solve function. We will show how to do so with examples.
 
-You just need to call a "solve" function with in entry the model of the convex QP you want to solve. We show you below examples in C++ and python for ProxQP sparse and dense backends. Note that the sparse and dense solvers take respectivaly entries in sparse and dense formats.
+You just need to call a "solve" function with in entry the model of the convex QP you want to solve. We show you below examples in C++ and python for ProxQP sparse and dense backends. Note that the sparse and dense solvers take respectivaly entries in sparse and dense formats. Note finally that the dense backend benefits from a feature enabling it to handle more efficiently box inequality constraints. We provide an example below as well of how using it (you can find more details about it in [ProxQP API](2-ProxQP_api.md)).
 
 <table class="manual">
   <tr>
@@ -160,3 +160,5 @@ Note that if some elements of your QP model are not defined (for example a QP wi
     </td>
   </tr>
 </table>
+
+Finally, note that you can also you ProxQP for solving QP with non convex quadratic. For doing so, you just need to provide to the solve function an estimate of the smallest eigenvalue of the quadratic cost H. The solver environment provides an independent function for estimating the minimal eigenvalue of a dense or sparse symmetric matrix. It is named "estimate_minimal_eigen_value_of_symmetric_matrix". You can find more details in [ProxQP API with examples](2-ProxQP_api.md) about the different other settings that can be used for setting other related parameters (e.g., for using a Power Iteration algorithm).

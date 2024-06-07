@@ -5,6 +5,7 @@
 #include "proxsuite/linalg/veg/internal/preprocessor.hpp"
 #include "proxsuite/linalg/veg/internal/prologue.hpp"
 #include <initializer_list>
+#include <utility>
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -127,12 +128,7 @@
 #define VEG_HAS_CONCEPTS 0
 #endif
 
-#if defined(VEG_WITH_CXX17_SUPPORT)
-#define VEG_DECLVAL(...) (static_cast<__VA_ARGS__ (*)() noexcept>(nullptr)())
-#else
-#define VEG_DECLVAL(...)                                                       \
-  (::proxsuite::linalg::veg::_detail::_meta::declval<__VA_ARGS__>())
-#endif
+#define VEG_DECLVAL(...) (std::declval<__VA_ARGS__>())
 
 #if defined(__clang__)
 #define VEG_ARROW(...)                                                         \
@@ -233,8 +229,9 @@
   concept test_return_##Name = __VA_ARGS__;                                    \
   }                                                                            \
   template<__VEG_PP_REMOVE_PAREN1(Tpl)>                                        \
-  concept Name = _veg_detail::test_return_                                     \
-  ##Name<decltype((Expr)), __VEG_PP_REMOVE_PAREN1(TplNames)>;                  \
+  concept Name =                                                               \
+    _veg_detail::test_return_##Name<decltype((Expr)),                          \
+                                    __VEG_PP_REMOVE_PAREN1(TplNames)>;         \
   template<__VEG_PP_REMOVE_PAREN1(Tpl)>                                        \
   concept xnothrow_##Name = noexcept(Expr);                                    \
   template<__VEG_PP_REMOVE_PAREN1(Tpl)>                                        \
@@ -328,8 +325,10 @@
     (__VA_ARGS__),                                                             \
     ::proxsuite::linalg::veg::meta::bool_constant<__VA_ARGS__>);               \
   VEG_TEMPLATE(                                                                \
-    Tpl, requires(__VA_ARGS__), constexpr auto check_##Name, (_ = 0, int))     \
-  noexcept -> ::proxsuite::linalg::veg::meta::true_type
+    Tpl,                                                                       \
+    requires(__VA_ARGS__),                                                     \
+    constexpr auto check_##Name,                                               \
+    (_ = 0, int)) noexcept -> ::proxsuite::linalg::veg::meta::true_type
 
 #define __VEG_IMPL_SFINAE(_, Param)                                            \
   , ::proxsuite::linalg::veg::meta::                                           \
@@ -662,9 +661,6 @@ struct unref<T&>
   using type = T;
 };
 
-template<typename T>
-auto
-declval() VEG_ALWAYS_NOEXCEPT->T;
 } // namespace _meta
 } // namespace _detail
 
@@ -848,14 +844,14 @@ struct mem_ptr_type<Mem C::*>
 };
 
 constexpr auto
-all_of_slice(bool const* arr, usize size) VEG_NOEXCEPT->bool
+all_of_slice(bool const* arr, usize size) VEG_NOEXCEPT -> bool
 {
   return size == 0 ? true
                    : (arr[0] && _detail::all_of_slice(arr + 1, size - 1));
 }
 template<usize N>
 inline constexpr auto
-all_of(bool const (&lst)[N]) VEG_NOEXCEPT->bool
+all_of(bool const (&lst)[N]) VEG_NOEXCEPT -> bool
 {
   return _detail::all_of_slice(lst, N);
 }
@@ -1096,7 +1092,8 @@ HEDLEY_DIAGNOSTIC_PUSH
 
 template<typename Char,
          Char... Cs>
-constexpr auto operator""__veglib_const_literal_gnuc() noexcept // NOLINT
+constexpr auto
+operator""__veglib_const_literal_gnuc() noexcept // NOLINT
   -> proxsuite::linalg::veg::StrLiteralConstant<
     proxsuite::linalg::veg::CharUnit(Cs)...>
 {
@@ -1159,7 +1156,8 @@ struct StrLiteralExpand<_meta::integer_sequence<usize, Is...>, L>
 } // namespace proxsuite
 
 template<proxsuite::linalg::veg::_detail::StrLiteralImpl S>
-constexpr auto operator""__veglib_const_literal_cpp20() noexcept ->
+constexpr auto
+operator""__veglib_const_literal_cpp20() noexcept ->
   typename proxsuite::linalg::veg::_detail::StrLiteralExpand< //
     proxsuite::linalg::veg::_detail::_meta::make_index_sequence<
       proxsuite::linalg::veg::_detail::StrLiteralLen<decltype(S)>::value>,
@@ -1197,18 +1195,20 @@ struct ExtractCharsImplExpr<LiteralType, _meta::integer_sequence<usize, Is...>>
 
 template<typename LiteralType>
 auto
-extract_chars(LiteralType /*unused*/) -> typename ExtractCharsImpl<
-  LiteralType,
-  _meta::make_index_sequence<LiteralType::Size::value>>::Type
+extract_chars(LiteralType /*unused*/) ->
+  typename ExtractCharsImpl<
+    LiteralType,
+    _meta::make_index_sequence<LiteralType::Size::value>>::Type
 {
   return {};
 }
 
 template<typename LiteralType>
 auto
-extract_chars_expr(LiteralType /*unused*/) -> typename ExtractCharsImplExpr<
-  LiteralType,
-  _meta::make_index_sequence<LiteralType::Size::value>>::Type
+extract_chars_expr(LiteralType /*unused*/) ->
+  typename ExtractCharsImplExpr<
+    LiteralType,
+    _meta::make_index_sequence<LiteralType::Size::value>>::Type
 {
   return {};
 }

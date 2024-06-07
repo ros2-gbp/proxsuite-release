@@ -22,7 +22,35 @@ enum struct SparseBackend
   SparseCholesky, // sparse cholesky backend.
   MatrixFree,     // iterative matrix free sparse backend.
 };
-
+// Sparse backend specifications
+enum struct DenseBackend
+{
+  Automatic,      // the solver will select the appropriate dense backend.
+  PrimalDualLDLT, // Factorization of the full regularized KKT matrix.
+  PrimalLDLT, // Factorize only the primal Hessian corresponding to H+rho I +
+              // 1/mu AT*A.
+};
+// MERIT FUNCTION
+enum struct MeritFunctionType
+{
+  GPDAL, // Generalized Primal Dual Augmented Lagrangian
+  PDAL,  // Primal Dual Augmented Lagrangian
+};
+// COST FUNCTION TYPE
+enum struct HessianType
+{
+  Zero,    // Linear Program
+  Dense,   // Quadratic Program
+  Diagonal // Quadratic Program with diagonal Hessian
+};
+// Augment the minimal eigen value of H with some regularizer
+enum struct EigenValueEstimateMethodOption
+{
+  PowerIteration, // Process a power iteration algorithm
+  ExactMethod     // Use Eigen's method to estimate the minimal eigenvalue
+                  // watch out, the last option is only available for dense
+                  // matrices!
+};
 inline std::ostream&
 operator<<(std::ostream& os, const SparseBackend& sparse_backend)
 {
@@ -32,6 +60,18 @@ operator<<(std::ostream& os, const SparseBackend& sparse_backend)
     os << "SparseCholesky";
   } else {
     os << "MatrixFree";
+  }
+  return os;
+}
+inline std::ostream&
+operator<<(std::ostream& os, const DenseBackend& dense_backend)
+{
+  if (dense_backend == DenseBackend::PrimalDualLDLT) {
+    os << "PrimalDualLDLT";
+  } else if (dense_backend == DenseBackend::PrimalLDLT) {
+    os << "PrimalLDLT";
+  } else {
+    os << "Automatic";
   }
   return os;
 }
@@ -94,8 +134,13 @@ struct Settings
   T eps_primal_inf;
   T eps_dual_inf;
   bool bcl_update;
+  MeritFunctionType merit_function_type;
+  T alpha_gpdal;
 
   SparseBackend sparse_backend;
+  bool primal_infeasibility_solving;
+  isize frequence_infeasibility_check;
+  T default_H_eigenvalue_estimate;
   /*!
    * Default constructor.
    * @param default_rho default rho parameter of result class
@@ -134,9 +179,9 @@ struct Settings
    * @param initial_guess sets the initial guess option for initilizing x, y
    * and z.
    * @param update_preconditioner If set to true, the preconditioner will be
-   * re-derived with the update method.
+   * re-computed when calling the update method.
    * @param compute_preconditioner If set to true, the preconditioner will be
-   * derived with the init method.
+   * computed with the init method.
    * @param compute_timings If set to true, timings will be computed by the
    * solver (setup time, solving time, and run time = setup time + solving
    * time).
@@ -155,10 +200,18 @@ struct Settings
    * used.
    * @param sparse_backend Default automatic. User can choose between sparse
    * cholesky or iterative matrix free sparse backend.
+   * @param primal_infeasibility_solving solves the closest primal feasible
+   * problem if activated
+   * @param frequence_infeasibility_check frequence at which infeasibility is
+   * checked
+   * @param find_H_minimal_eigenvalue track the minimal eigen value of the
+   * quadratic cost H
+   * @param default_H_eigenvalue_estimate default H eigenvalue estimate (i.e.,
+   * if we make a model update and H does not change this one is used)
    */
 
   Settings(
-    T default_rho = 1.E-6,
+    DenseBackend dense_backend = DenseBackend::PrimalDualLDLT,
     T default_mu_eq = 1.E-3,
     T default_mu_in = 1.E-1,
     T alpha_bcl = 0.1,
@@ -188,7 +241,7 @@ struct Settings
                                           // EQUALITY_CONSTRAINED_INITIAL_GUESS,
                                           // as most often we run only
                                           // once a problem
-    bool update_preconditioner = true,
+    bool update_preconditioner = false,
     bool compute_preconditioner = true,
     bool compute_timings = false,
     bool check_duality_gap = false,
@@ -199,9 +252,13 @@ struct Settings
     T eps_primal_inf = 1.E-4,
     T eps_dual_inf = 1.E-4,
     bool bcl_update = true,
-    SparseBackend sparse_backend = SparseBackend::Automatic)
-    : default_rho(default_rho)
-    , default_mu_eq(default_mu_eq)
+    MeritFunctionType merit_function_type = MeritFunctionType::GPDAL,
+    T alpha_gpdal = 0.95,
+    SparseBackend sparse_backend = SparseBackend::Automatic,
+    bool primal_infeasibility_solving = false,
+    isize frequence_infeasibility_check = 1,
+    T default_H_eigenvalue_estimate = 0.)
+    : default_mu_eq(default_mu_eq)
     , default_mu_in(default_mu_in)
     , alpha_bcl(alpha_bcl)
     , beta_bcl(beta_bcl)
@@ -237,8 +294,24 @@ struct Settings
     , eps_primal_inf(eps_primal_inf)
     , eps_dual_inf(eps_dual_inf)
     , bcl_update(bcl_update)
+    , merit_function_type(merit_function_type)
+    , alpha_gpdal(alpha_gpdal)
     , sparse_backend(sparse_backend)
+    , primal_infeasibility_solving(primal_infeasibility_solving)
+    , frequence_infeasibility_check(frequence_infeasibility_check)
+    , default_H_eigenvalue_estimate(default_H_eigenvalue_estimate)
   {
+    switch (dense_backend) {
+      case DenseBackend::PrimalDualLDLT:
+        default_rho = 1.E-6;
+        break;
+      case DenseBackend::PrimalLDLT:
+        default_rho = 1.E-5;
+        break;
+      case DenseBackend::Automatic:
+        default_rho = 1.E-6;
+        break;
+    }
   }
 };
 
@@ -285,7 +358,15 @@ operator==(const Settings<T>& settings1, const Settings<T>& settings2)
     settings1.eps_primal_inf == settings2.eps_primal_inf &&
     settings1.eps_dual_inf == settings2.eps_dual_inf &&
     settings1.bcl_update == settings2.bcl_update &&
-    settings1.sparse_backend == settings2.sparse_backend;
+    settings1.merit_function_type == settings2.merit_function_type &&
+    settings1.alpha_gpdal == settings2.alpha_gpdal &&
+    settings1.sparse_backend == settings2.sparse_backend &&
+    settings1.primal_infeasibility_solving ==
+      settings2.primal_infeasibility_solving &&
+    settings1.frequence_infeasibility_check ==
+      settings2.frequence_infeasibility_check &&
+    settings1.default_H_eigenvalue_estimate ==
+      settings2.default_H_eigenvalue_estimate;
   return value;
 }
 
