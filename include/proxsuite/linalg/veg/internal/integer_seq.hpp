@@ -204,10 +204,10 @@ struct HollowIndexedTuple<meta::index_sequence<Is...>, Ts...>
 
 template<usize I, typename T>
 auto
-get_type(HollowLeaf<I, T> const*) VEG_NOEXCEPT->T;
+get_type(HollowLeaf<I, T> const*) VEG_NOEXCEPT -> T;
 template<typename T, usize I>
 auto
-get_idx(HollowLeaf<I, T> const*) VEG_NOEXCEPT->meta::constant<usize, I>;
+get_idx(HollowLeaf<I, T> const*) VEG_NOEXCEPT -> meta::constant<usize, I>;
 
 template<usize I>
 struct pack_ith_elem
@@ -234,8 +234,15 @@ template<typename T, typename... Ts>
 using position_of = typename _detail::pack_idx_elem<T>::template Type<Ts...>;
 
 #if VEG_HAS_BUILTIN(__type_pack_element)
+namespace _detail {
 template<usize I, typename... Ts>
-using ith = __type_pack_element<I, Ts...>;
+struct type_pack_element
+{
+  using type = __type_pack_element<I, Ts...>;
+};
+}
+template<usize I, typename... Ts>
+using ith = typename _detail::type_pack_element<I, Ts...>::type;
 #else
 template<usize I, typename... Ts>
 using ith = typename _detail::pack_ith_elem<I>::template Type<Ts...>;
