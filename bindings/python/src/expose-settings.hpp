@@ -30,10 +30,21 @@ exposeSettings(pybind11::module_ m)
            InitialGuessStatus::COLD_START_WITH_PREVIOUS_RESULT)
     .export_values();
 
+  ::pybind11::enum_<MeritFunctionType>(
+    m, "MeritFunctionType", pybind11::module_local())
+    .value("GPDAL", MeritFunctionType::GPDAL)
+    .value("PDAL", MeritFunctionType::PDAL)
+    .export_values();
+
   ::pybind11::enum_<SparseBackend>(m, "SparseBackend", pybind11::module_local())
     .value("Automatic", SparseBackend::Automatic)
     .value("MatrixFree", SparseBackend::MatrixFree)
     .value("SparseCholesky", SparseBackend::SparseCholesky)
+    .export_values();
+  ::pybind11::enum_<EigenValueEstimateMethodOption>(
+    m, "EigenValueEstimateMethodOption", pybind11::module_local())
+    .value("PowerIteration", EigenValueEstimateMethodOption::PowerIteration)
+    .value("ExactMethod", EigenValueEstimateMethodOption::ExactMethod)
     .export_values();
 
   ::pybind11::class_<Settings<T>>(m, "Settings", pybind11::module_local())
@@ -49,6 +60,8 @@ exposeSettings(pybind11::module_ m)
                    &Settings<T>::refactor_rho_threshold)
     .def_readwrite("mu_min_eq", &Settings<T>::mu_min_eq)
     .def_readwrite("mu_min_in", &Settings<T>::mu_min_in)
+    .def_readwrite("mu_max_eq_inv", &Settings<T>::mu_max_eq_inv)
+    .def_readwrite("mu_max_in_inv", &Settings<T>::mu_max_in_inv)
     .def_readwrite("mu_update_factor", &Settings<T>::mu_update_factor)
     .def_readwrite("cold_reset_mu_eq", &Settings<T>::cold_reset_mu_eq)
     .def_readwrite("cold_reset_mu_in", &Settings<T>::cold_reset_mu_in)
@@ -75,6 +88,14 @@ exposeSettings(pybind11::module_ m)
     .def_readwrite("eps_duality_gap_rel", &Settings<T>::eps_duality_gap_rel)
     .def_readwrite("verbose", &Settings<T>::verbose)
     .def_readwrite("bcl_update", &Settings<T>::bcl_update)
+    .def_readwrite("merit_function_type", &Settings<T>::merit_function_type)
+    .def_readwrite("alpha_gpdal", &Settings<T>::alpha_gpdal)
+    .def_readwrite("primal_infeasibility_solving",
+                   &Settings<T>::primal_infeasibility_solving)
+    .def_readwrite("frequence_infeasibility_check",
+                   &Settings<T>::frequence_infeasibility_check)
+    .def_readwrite("default_H_eigenvalue_estimate",
+                   &Settings<T>::default_H_eigenvalue_estimate)
     .def(pybind11::self == pybind11::self)
     .def(pybind11::self != pybind11::self)
     .def(pybind11::pickle(
