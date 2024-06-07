@@ -49,3 +49,13 @@ qp.solve()
 print("optimal x: {}".format(qp.results.x))
 print("optimal y: {}".format(qp.results.y))
 print("optimal z: {}".format(qp.results.z))
+# if you have boxes (dense backend only) you proceed the same way
+qp2 = proxsuite.proxqp.dense.QP(n, n_eq, n_in, True)
+l_box = -np.ones(n) * 1.0e10
+u_box = np.ones(n) * 1.0e10
+qp2.init(H, g, A, b, C, l, u, l_box, u_box)
+qp2.solve()
+l_box += 1.0e1
+u_box -= 1.0e1
+qp2.update(H_new, g_new, A_new, b_new, C_new, l_new, u_new, l_box, u_box)
+qp2.solve()

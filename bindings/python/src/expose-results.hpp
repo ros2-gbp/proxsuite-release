@@ -25,6 +25,8 @@ exposeResults(pybind11::module_ m)
     .value("PROXQP_SOLVED", QPSolverOutput::PROXQP_SOLVED)
     .value("PROXQP_MAX_ITER_REACHED", QPSolverOutput::PROXQP_MAX_ITER_REACHED)
     .value("PROXQP_PRIMAL_INFEASIBLE", QPSolverOutput::PROXQP_PRIMAL_INFEASIBLE)
+    .value("PROXQP_SOLVED_CLOSEST_PRIMAL_FEASIBLE",
+           QPSolverOutput::PROXQP_SOLVED_CLOSEST_PRIMAL_FEASIBLE)
     .value("PROXQP_DUAL_INFEASIBLE", QPSolverOutput::PROXQP_DUAL_INFEASIBLE)
     .value("PROXQP_NOT_RUN", QPSolverOutput::PROXQP_NOT_RUN)
     .export_values();
@@ -42,6 +44,8 @@ exposeResults(pybind11::module_ m)
     .def_readwrite("duality_gap", &Info<T>::duality_gap)
     .def_readwrite("pri_res", &Info<T>::pri_res)
     .def_readwrite("dua_res", &Info<T>::dua_res)
+    .def_readwrite("duality_gap", &Info<T>::duality_gap)
+    .def_readwrite("iterative_residual", &Info<T>::iterative_residual)
     .def_readwrite("objValue", &Info<T>::objValue)
     .def_readwrite("status", &Info<T>::status)
     .def_readwrite("rho_updates", &Info<T>::rho_updates)
@@ -49,7 +53,12 @@ exposeResults(pybind11::module_ m)
     .def_readwrite("sparse_backend",
                    &Info<T>::sparse_backend,
                    "Sparse backend used to solve the qp, either SparseCholesky "
-                   "or MatrixFree.");
+                   "or MatrixFree.")
+    .def_readwrite("minimal_H_eigenvalue_estimate",
+                   &Info<T>::minimal_H_eigenvalue_estimate,
+                   "By default it equals 0, in order to get an estimate, set "
+                   "appropriately the setting option "
+                   "find_H_minimal_eigenvalue.");
 
   ::pybind11::class_<Results<T>>(m, "Results", pybind11::module_local())
     .def(::pybind11::init<i64, i64, i64>(),
@@ -66,6 +75,14 @@ exposeResults(pybind11::module_ m)
       Results<T>,
       z,
       "The dual solution associated to the inequality constraints.")
+    .PROXSUITE_PYTHON_EIGEN_READWRITE(
+      Results<T>,
+      se,
+      "Optimal shift to the closest feasible problem wrt equality constraints.")
+    .PROXSUITE_PYTHON_EIGEN_READWRITE(Results<T>,
+                                      si,
+                                      "Pptimal shift to the closest feasible "
+                                      "problem wrt inequality constraints.")
     .def_readwrite("info", &Results<T>::info)
     .def(pybind11::self == pybind11::self)
     .def(pybind11::self != pybind11::self)
