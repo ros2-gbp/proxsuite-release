@@ -53,8 +53,8 @@ struct FnInfo<auto(Args...)->Ret_>
   template auto __VA_ARGS__(                                                   \
     LDLT_IMPL_GET_PARAMS(NParams, __VA_ARGS__)                                 \
       typename ::proxsuite::proxqp::detail::FnInfo<                            \
-        decltype(__VA_ARGS__)>::template Arg<(NParams)-1>)                     \
-    ->typename ::proxsuite::proxqp::detail::FnInfo<decltype(__VA_ARGS__)>::Ret
+        decltype(__VA_ARGS__)>::template Arg<(NParams) - 1>) ->                \
+    typename ::proxsuite::proxqp::detail::FnInfo<decltype(__VA_ARGS__)>::Ret
 #define LDLT_EXPLICIT_TPL_DECL(NParams, ...)                                   \
   extern LDLT_EXPLICIT_TPL_DEF(NParams, __VA_ARGS__)
 
@@ -602,8 +602,7 @@ struct VectorView
                requires(LDLT_CONCEPT(eigen_vector_view<Vec, T>)),
                VEG_INLINE VectorView,
                (/*tag*/, FromEigen),
-               (vec, Vec const&))
-  noexcept
+               (vec, Vec const&)) noexcept
     : data(vec.data())
     , dim(vec.rows())
   {
@@ -648,8 +647,7 @@ struct VectorViewMut
                requires(LDLT_CONCEPT(eigen_vector_view_mut<Vec, T>)),
                VEG_INLINE VectorViewMut,
                (/*tag*/, FromEigen),
-               (vec, Vec&&))
-  noexcept
+               (vec, Vec&&)) noexcept
     : data(vec.data())
     , dim(vec.rows())
   {
@@ -704,8 +702,7 @@ struct StridedVectorView
                requires(LDLT_CONCEPT(eigen_strided_vector_view<Vec, T>)),
                VEG_INLINE StridedVectorView,
                (/*tag*/, FromEigen),
-               (vec, Vec const&))
-  noexcept
+               (vec, Vec const&)) noexcept
     : data(vec.data())
     , dim(vec.rows())
     , stride(vec.innerStride())
@@ -720,8 +717,8 @@ struct StridedVectorView
   {
     return *ptr(index);
   }
-  VEG_INLINE auto segment(isize i, isize size) const noexcept
-    -> StridedVectorView
+  VEG_INLINE auto segment(isize i,
+                          isize size) const noexcept -> StridedVectorView
   {
     return {
       from_ptr_size_stride,
@@ -763,8 +760,7 @@ struct StridedVectorViewMut
                requires(LDLT_CONCEPT(eigen_strided_vector_view_mut<Vec, T>)),
                VEG_INLINE StridedVectorViewMut,
                (/*tag*/, FromEigen),
-               (vec, Vec&&))
-  noexcept
+               (vec, Vec&&)) noexcept
     : data(vec.data())
     , dim(vec.rows())
     , stride(vec.innerStride())
@@ -788,8 +784,8 @@ struct StridedVectorViewMut
   {
     return *ptr(index);
   }
-  VEG_INLINE auto segment(isize i, isize size) const noexcept
-    -> StridedVectorViewMut
+  VEG_INLINE auto segment(isize i,
+                          isize size) const noexcept -> StridedVectorViewMut
   {
     return {
       from_ptr_size_stride,
@@ -834,8 +830,7 @@ struct MatrixView
                         eigen::GetLayout<unref<Mat>>::value == L),
                VEG_INLINE MatrixView,
                (/*tag*/, FromEigen),
-               (mat, Mat const&))
-  noexcept
+               (mat, Mat const&)) noexcept
     : data(mat.data())
     , rows(mat.rows())
     , cols(mat.cols())
@@ -889,13 +884,15 @@ private:
   }
 
 public:
-  VEG_INLINE auto col(isize c) const noexcept -> proxsuite::linalg::veg::meta::
-    if_t<(L == colmajor), VectorView<T>, StridedVectorView<T>>
+  VEG_INLINE auto col(isize c) const noexcept
+    -> proxsuite::linalg::veg::meta::
+      if_t<(L == colmajor), VectorView<T>, StridedVectorView<T>>
   {
     return col_impl(proxsuite::linalg::veg::meta::constant<Layout, L>{}, c);
   }
-  VEG_INLINE auto row(isize r) const noexcept -> proxsuite::linalg::veg::meta::
-    if_t<(L == rowmajor), VectorView<T>, StridedVectorView<T>>
+  VEG_INLINE auto row(isize r) const noexcept
+    -> proxsuite::linalg::veg::meta::
+      if_t<(L == rowmajor), VectorView<T>, StridedVectorView<T>>
   {
     return trans().col(r);
   }
@@ -941,8 +938,7 @@ struct MatrixViewMut
                         eigen::GetLayout<unref<Mat>>::value == L),
                VEG_INLINE MatrixViewMut,
                (/*tag*/, FromEigen),
-               (mat, Mat&&))
-  noexcept
+               (mat, Mat&&)) noexcept
     : data(mat.data())
     , rows(mat.rows())
     , cols(mat.cols())
@@ -996,13 +992,15 @@ private:
   }
 
 public:
-  VEG_INLINE auto col(isize c) const noexcept -> proxsuite::linalg::veg::meta::
-    if_t<(L == colmajor), VectorViewMut<T>, StridedVectorViewMut<T>>
+  VEG_INLINE auto col(isize c) const noexcept
+    -> proxsuite::linalg::veg::meta::
+      if_t<(L == colmajor), VectorViewMut<T>, StridedVectorViewMut<T>>
   {
     return col_impl(proxsuite::linalg::veg::meta::constant<Layout, L>{}, c);
   }
-  VEG_INLINE auto row(isize r) const noexcept -> proxsuite::linalg::veg::meta::
-    if_t<(L == rowmajor), VectorViewMut<T>, StridedVectorViewMut<T>>
+  VEG_INLINE auto row(isize r) const noexcept
+    -> proxsuite::linalg::veg::meta::
+      if_t<(L == rowmajor), VectorViewMut<T>, StridedVectorViewMut<T>>
   {
     return trans().col(r);
   }
@@ -1155,8 +1153,7 @@ noalias_mul_add(MatrixViewMut<T, colmajor> dst,
 
     MapMut(dst.data, dst.rows, dst.cols, Stride(dst.outer_stride))
       .noalias()
-      .
-      operator+=(
+      .operator+=(
         factor *
         LAZY_PRODUCT(
           Map(lhs.data, lhs.rows, lhs.cols, Stride(lhs.outer_stride)),
@@ -1367,6 +1364,9 @@ struct QpViewBox
   MatrixView<Scalar, layout> C;
   VectorView<Scalar> u;
   VectorView<Scalar> l;
+  VectorView<Scalar> I;
+  VectorView<Scalar> u_box;
+  VectorView<Scalar> l_box;
 };
 
 template<typename T>
@@ -1404,13 +1404,15 @@ struct QpViewBoxMut
   MatrixViewMut<Scalar, layout> C;
   VectorViewMut<Scalar> u;
   VectorViewMut<Scalar> l;
+  VectorViewMut<Scalar> I;
+  VectorViewMut<Scalar> l_box;
+  VectorViewMut<Scalar> u_box;
 
   VEG_INLINE constexpr auto as_const() const noexcept -> QpViewBox<Scalar>
   {
-    return {
-      H.as_const(), g.as_const(), A.as_const(), b.as_const(),
-      C.as_const(), u.as_const(), l.as_const(),
-    };
+    return { H.as_const(),     g.as_const(),    A.as_const(), b.as_const(),
+             C.as_const(),     u.as_const(),    l.as_const(), I.as_const(),
+             u_box.as_const(), l_box.as_const() };
   }
 };
 
