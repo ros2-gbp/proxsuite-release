@@ -5,16 +5,7 @@
 #include "proxsuite/linalg/veg/internal/prologue.hpp"
 
 #include <new>
-
-#if !VEG_HAS_BUILTIN(__has_trivial_destructor) ||                              \
-  !VEG_HAS_BUILTIN(__is_trivially_constructible) ||                            \
-  !VEG_HAS_BUILTIN(__is_constructible) ||                                      \
-  !VEG_HAS_BUILTIN(__is_nothrow_constructible) ||                              \
-  !VEG_HAS_BUILTIN(__is_trivially_copyable) ||                                 \
-  !VEG_HAS_BUILTIN(__is_trivial) || !VEG_HAS_BUILTIN(__is_final) ||            \
-  !VEG_HAS_BUILTIN(__is_empty)
 #include <type_traits>
-#endif
 
 namespace proxsuite {
 namespace linalg {
@@ -202,7 +193,7 @@ struct WithArg
   Fn&& fn;
   T&& arg;
   VEG_INLINE constexpr auto operator()() const&& -> decltype(VEG_FWD(fn)(
-    VEG_FWD(arg)))
+                                                   VEG_FWD(arg)))
   {
     return VEG_FWD(fn)(VEG_FWD(arg));
   }

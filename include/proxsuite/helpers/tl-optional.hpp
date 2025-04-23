@@ -18,12 +18,12 @@
 #define TL_OPTIONAL_HPP
 
 #define TL_OPTIONAL_VERSION_MAJOR 1
-#define TL_OPTIONAL_VERSION_MINOR 0
+#define TL_OPTIONAL_VERSION_MINOR 1
 #define TL_OPTIONAL_VERSION_PATCH 0
 
+#include <new>
 #include <exception>
 #include <functional>
-#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -506,7 +506,7 @@ struct optional_operations_base : optional_storage_base<T>
   }
 
   template<class... Args>
-  void construct(Args&&... args) noexcept
+  void construct(Args&&... args)
   {
     new (std::addressof(this->m_value)) T(std::forward<Args>(args)...);
     this->m_has_value = true;
@@ -640,9 +640,9 @@ struct optional_copy_assign_base<T, false> : optional_move_base<T>
 // move assignable
 #ifndef TL_OPTIONAL_GCC49
 template<class T,
-         bool = std::is_trivially_destructible<T>::value&&
-           std::is_trivially_move_constructible<T>::value&&
-             std::is_trivially_move_assignable<T>::value>
+         bool = std::is_trivially_destructible<T>::value &&
+                std::is_trivially_move_constructible<T>::value &&
+                std::is_trivially_move_assignable<T>::value>
 struct optional_move_assign_base : optional_copy_assign_base<T>
 {
   using optional_copy_assign_base<T>::optional_copy_assign_base;
@@ -667,8 +667,8 @@ struct optional_move_assign_base<T, false> : optional_copy_assign_base<T>
 
   optional_move_assign_base&
   operator=(optional_move_assign_base&& rhs) noexcept(
-    std::is_nothrow_move_constructible<T>::value&&
-      std::is_nothrow_move_assignable<T>::value)
+    std::is_nothrow_move_constructible<T>::value &&
+    std::is_nothrow_move_assignable<T>::value)
   {
     this->assign(std::move(rhs));
     return *this;
@@ -1400,7 +1400,7 @@ public:
       }
     }
 
-    if (rhs.has_value()) {
+    else if (rhs.has_value()) {
       this->construct(*rhs);
     }
 
@@ -1423,7 +1423,7 @@ public:
       }
     }
 
-    if (rhs.has_value()) {
+    else if (rhs.has_value()) {
       this->construct(std::move(*rhs));
     }
 
@@ -1461,8 +1461,8 @@ public:
   /// If one has a value, it is moved to the other and the movee is left
   /// valueless.
   void swap(optional& rhs) noexcept(
-    std::is_nothrow_move_constructible<T>::value&&
-      detail::is_nothrow_swappable<T>::value)
+    std::is_nothrow_move_constructible<T>::value &&
+    detail::is_nothrow_swappable<T>::value)
   {
     using std::swap;
     if (has_value()) {
@@ -1558,7 +1558,7 @@ public:
     static_assert(std::is_move_constructible<T>::value &&
                     std::is_convertible<U&&, T>::value,
                   "T must be move constructible and convertible from U");
-    return has_value() ? **this : static_cast<T>(std::forward<U>(u));
+    return has_value() ? std::move(**this) : static_cast<T>(std::forward<U>(u));
   }
 
   /// Destroys the stored value if one exists, making the optional empty
@@ -1972,7 +1972,7 @@ public:
     static_assert(detail::is_optional<result>::value,
                   "F must return an optional");
 
-    return has_value() ? detail::invoke(std::forward<F>(f), **this)
+    return has_value() ? detail::invoke(std::forward<F>(f), std::move(**this))
                        : result(nullopt);
   }
 #endif

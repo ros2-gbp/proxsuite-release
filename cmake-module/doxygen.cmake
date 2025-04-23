@@ -1,4 +1,4 @@
-# Copyright (C) 2008-2014 LAAS-CNRS, JRL AIST-CNRS.
+# Copyright (C) 2008-2023 LAAS-CNRS, JRL AIST-CNRS, INRIA.
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -614,6 +614,21 @@ macro(_SETUP_PROJECT_DOCUMENTATION)
   endif(NOT DOXYGEN_FOUND)
 endmacro(_SETUP_PROJECT_DOCUMENTATION)
 
+# REMOVE_DUPLICATES
+# -----------------
+#
+# Remove duplicate values from a space separated list
+function(REMOVE_DUPLICATES ARG_STR OUTPUT)
+  set(ARG_LIST ${ARG_STR})
+  separate_arguments(ARG_LIST)
+  list(REMOVE_DUPLICATES ARG_LIST)
+  string(REGEX REPLACE "([^\\]|^);" "\\1 " _TMP_STR "${ARG_LIST}")
+  string(REGEX REPLACE "[\\](.)" "\\1" _TMP_STR "${_TMP_STR}") # fixes escaping
+  set(${OUTPUT}
+      "${_TMP_STR}"
+      PARENT_SCOPE)
+endfunction()
+
 # _DOXYTAG_ENTRIES_FROM_CMAKE_DEPENDENCIES
 # ----------------------------------------
 #
@@ -675,6 +690,7 @@ macro(_SETUP_PROJECT_DOCUMENTATION_FINALIZE)
     if(INSTALL_DOCUMENTATION)
       # Find doxytag files To ignore this list of tag files, set variable
       # DOXYGEN_TAGFILES
+      set(INSTALL_DOCDIR ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DOCDIR})
       set(PKG_REQUIRES ${_PKG_CONFIG_REQUIRES})
       list(APPEND PKG_REQUIRES ${_PKG_CONFIG_COMPILE_TIME_REQUIRES})
       foreach(PKG_CONFIG_STRING ${PKG_REQUIRES})
@@ -683,17 +699,20 @@ macro(_SETUP_PROJECT_DOCUMENTATION_FINALIZE)
         # If DOXYGENDOCDIR is specified, add a doc path.
         if(DEFINED ${PREFIX}_DOXYGENDOCDIR
            AND EXISTS ${${PREFIX}_DOXYGENDOCDIR}/${LIBRARY_NAME}.doxytag)
-          file(RELATIVE_PATH DEP_DOCDIR ${_PKG_CONFIG_DOXYGENDOCDIR}
+          file(RELATIVE_PATH DEP_DOCDIR ${INSTALL_DOCDIR}
                ${${PREFIX}_DOXYGENDOCDIR})
 
-          set(DOXYGEN_TAGFILES_FROM_DEPENDENCIES
-              "${DOXYGEN_TAGFILES_FROM_DEPENDENCIES} \"${${PREFIX}_DOXYGENDOCDIR}/${LIBRARY_NAME}.doxytag\"=\"${DEP_DOCDIR}\""
+          set(_TAGFILES_FROM_DEPENDENCIES
+              "${_TAGFILES_FROM_DEPENDENCIES} \"${${PREFIX}_DOXYGENDOCDIR}/${LIBRARY_NAME}.doxytag = ${DEP_DOCDIR}\""
           )
         endif()
       endforeach()
       _doxytag_entries_from_cmake_dependencies(
-        "${_PACKAGE_CONFIG_DEPENDENCIES_PROJECTS}"
-        DOXYGEN_TAGFILES_FROM_DEPENDENCIES)
+        "${_PACKAGE_CONFIG_DEPENDENCIES_PROJECTS}" _TAGFILES_FROM_DEPENDENCIES)
+      if(_TAGFILES_FROM_DEPENDENCIES)
+        remove_duplicates(${_TAGFILES_FROM_DEPENDENCIES}
+                          DOXYGEN_TAGFILES_FROM_DEPENDENCIES)
+      endif()
     endif()
     _set_if_undefined(DOXYGEN_TAGFILES "${DOXYGEN_TAGFILES_FROM_DEPENDENCIES}")
 
