@@ -5,7 +5,7 @@
 //
 -->
 
-<img src="https://github.com/Simple-Robotics/proxsuite/raw/main/doc/images/proxsuite-logo.png" width="700" alt="Proxsuite Logo" style="display: block; margin-left: auto; margin-right: auto;"/>
+<img src="https://github.com/Simple-Robotics/proxsuite/raw/devel/doc/images/proxsuite-logo.png" width="700" alt="Proxsuite Logo" style="display: block; margin-left: auto; margin-right: auto;"/>
 
 \section OverviewIntro What is ProxSuite?
 
