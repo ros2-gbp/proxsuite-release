@@ -182,9 +182,9 @@ struct Settings
    * re-computed when calling the update method.
    * @param compute_preconditioner If set to true, the preconditioner will be
    * computed with the init method.
-   * @param compute_timings If set to true, timings will be computed by the
-   * solver (setup time, solving time, and run time = setup time + solving
-   * time).
+   * @param compute_timings If set to true, timings in microseconds will be
+   * computed by the solver (setup time, solving time, and run time = setup time
+   * + solving time).
    * @param check_duality_gap If set to true, duality gap will be calculated and
    * included in the stopping criterion.
    * @param eps_duality_gap_abs absolute duality-gap stopping criterion.
@@ -324,7 +324,7 @@ operator==(const Settings<T>& settings1, const Settings<T>& settings2)
     settings1.default_mu_eq == settings2.default_mu_eq &&
     settings1.default_mu_in == settings2.default_mu_in &&
     settings1.alpha_bcl == settings2.alpha_bcl &&
-    settings1.alpha_bcl == settings2.alpha_bcl &&
+    settings1.beta_bcl == settings2.beta_bcl &&
     settings1.refactor_dual_feasibility_threshold ==
       settings2.refactor_dual_feasibility_threshold &&
     settings1.refactor_rho_threshold == settings2.refactor_rho_threshold &&
@@ -333,7 +333,7 @@ operator==(const Settings<T>& settings1, const Settings<T>& settings2)
     settings1.mu_max_eq_inv == settings2.mu_max_eq_inv &&
     settings1.mu_max_in_inv == settings2.mu_max_in_inv &&
     settings1.mu_update_factor == settings2.mu_update_factor &&
-    settings1.mu_update_factor == settings2.mu_update_factor &&
+    settings1.mu_update_inv_factor == settings2.mu_update_inv_factor &&
     settings1.cold_reset_mu_eq == settings2.cold_reset_mu_eq &&
     settings1.cold_reset_mu_in == settings2.cold_reset_mu_in &&
     settings1.cold_reset_mu_eq_inv == settings2.cold_reset_mu_eq_inv &&

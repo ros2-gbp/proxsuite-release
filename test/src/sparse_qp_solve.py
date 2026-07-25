@@ -37,7 +37,7 @@ def generate_mixed_qp(n, seed=1):
     q = np.random.randn(n)
     A = spa.random(m, n, density=0.15, data_rvs=np.random.randn, format="csc")
     v = np.random.randn(n)  # Fictitious solution
-    delta = np.random.rand(m)  # To get inequality
+    _delta = np.random.rand(m)  # To get inequality
     u = A @ v
     l = -1.0e20 * np.ones(m)
 
@@ -347,7 +347,7 @@ class SparseQpWrapper(unittest.TestCase):
         b = None
         C = spa.csc_matrix(spa.eye(n))
         l = 2.0 * np.ones((n,))
-        u = np.full(l.shape, +np.infty)
+        u = np.full(l.shape, +np.inf)
 
         results = proxsuite.proxqp.sparse.solve(H, g, A, b, C, l, u)
         x_theoretically_optimal = np.array([2.0] * 149 + [3.0])
