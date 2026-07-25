@@ -8,33 +8,31 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v6
         with:
-          miniforge-variant: Mambaforge
+          submodules: recursive
+
+      - uses: conda-incubator/setup-miniconda@v4
+        with:
           miniforge-version: latest
-          channels: conda-forge
-          python-version: "3.10"
           activate-environment: doc
+          channels: conda-forge
+          conda-remove-defaults: "true"
 
       - name: Dependencies
         shell: bash -l {0}
         run: |
-          # Workaround for https://github.com/conda-incubator/setup-miniconda/issues/186
-          conda config --remove channels defaults
-
           # Compilation related dependencies
-          mamba install cmake make pkg-config doxygen graphviz
+          conda install cmake make pkg-config doxygen graphviz
 
           # Main dependencies
-          mamba install eigen
+          conda install eigen
 
       - name: Print environment
         shell: bash -l {0}
         run: |
           conda info
-          mamba list
+          conda list
           env
 
       - name: Configure
@@ -52,23 +50,21 @@ jobs:
           cmake --build . --config Release --target doc
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v7
         with:
           name: site
           path: build/doc/doxygen-html
 
   deploy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [build]
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v8
         with:
           name: site
           path: site
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@3.7.1
+        uses: JamesIves/github-pages-deploy-action@v4.8.0
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: gh-pages
-          FOLDER: site
+          folder: site
