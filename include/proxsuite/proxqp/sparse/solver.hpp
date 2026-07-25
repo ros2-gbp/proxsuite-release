@@ -117,7 +117,7 @@ ldl_iter_solve_noalias(
 
   LDLT_TEMP_VEC_UNINIT(T, err, n_tot, stack);
 
-  T prev_err_norm = std::numeric_limits<T>::infinity();
+  T prev_err_norm = std::numeric_limits<T>::max();
 
   for (isize solve_iter = 0; solve_iter < settings.nb_iterative_refinement;
        ++solve_iter) {
@@ -1209,7 +1209,7 @@ qp_solve(Results<T>& results,
               std::unique(alphas.data(), alphas.data() + alphas_count) -
               alphas.data();
             if (alphas_count > 0) { //&& alphas[0] <= 1
-              auto infty = std::numeric_limits<T>::infinity();
+              auto infty = std::numeric_limits<T>::max();
 
               T last_neg_grad = 0;
               T alpha_last_neg = 0;
@@ -1623,45 +1623,45 @@ qp_solve(Results<T>& results,
   if (settings.verbose) {
     std::cout << "-------------------SOLVER STATISTICS-------------------"
               << std::endl;
-    std::cout << "outer iter:   " << results.info.iter_ext << std::endl;
-    std::cout << "total iter:   " << results.info.iter << std::endl;
-    std::cout << "mu updates:   " << results.info.mu_updates << std::endl;
-    std::cout << "rho updates:  " << results.info.rho_updates << std::endl;
-    std::cout << "objective:    " << results.info.objValue << std::endl;
+    std::cout << "outer iter:     " << results.info.iter_ext << std::endl;
+    std::cout << "total iter:     " << results.info.iter << std::endl;
+    std::cout << "mu updates:     " << results.info.mu_updates << std::endl;
+    std::cout << "rho updates:    " << results.info.rho_updates << std::endl;
+    std::cout << "objective:      " << results.info.objValue << std::endl;
     switch (results.info.status) {
       case QPSolverOutput::PROXQP_SOLVED: {
-        std::cout << "status:       "
+        std::cout << "status:         "
                   << "Solved" << std::endl;
         break;
       }
       case QPSolverOutput::PROXQP_MAX_ITER_REACHED: {
-        std::cout << "status:       "
+        std::cout << "status:         "
                   << "Maximum number of iterations reached" << std::endl;
         break;
       }
       case QPSolverOutput::PROXQP_PRIMAL_INFEASIBLE: {
-        std::cout << "status:       "
+        std::cout << "status:         "
                   << "Primal infeasible" << std::endl;
         break;
       }
       case QPSolverOutput::PROXQP_DUAL_INFEASIBLE: {
-        std::cout << "status:       "
+        std::cout << "status:         "
                   << "Dual infeasible" << std::endl;
         break;
       }
       case QPSolverOutput::PROXQP_SOLVED_CLOSEST_PRIMAL_FEASIBLE: {
-        std::cout << "status:       "
+        std::cout << "status:         "
                   << "Solved closest primal feasible" << std::endl;
         break;
       }
       case QPSolverOutput::PROXQP_NOT_RUN: {
-        std::cout << "status:       "
+        std::cout << "status:         "
                   << "Solver not run" << std::endl;
         break;
       }
     }
     if (settings.compute_timings)
-      std::cout << "run time:     " << results.info.solve_time << std::endl;
+      std::cout << "run time [μs]:  " << results.info.solve_time << std::endl;
     std::cout << "--------------------------------------------------------"
               << std::endl;
   }

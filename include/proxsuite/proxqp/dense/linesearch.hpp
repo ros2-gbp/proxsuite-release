@@ -418,7 +418,7 @@ primal_dual_ls(const Model<T>& qpmodel,
     return;
   }
   ////////// STEP 2 ///////////
-  auto infty = std::numeric_limits<T>::infinity();
+  auto infty = std::numeric_limits<T>::max();
 
   T last_neg_grad = 0;
   T alpha_last_neg = 0;
