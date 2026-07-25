@@ -14,7 +14,7 @@ tracks:
       :{release_inc} --os-name fedora
     - git-bloom-generate -y rosrpm --prefix release/:{ros_distro} :{ros_distro} -i
       :{release_inc} --os-name rhel
-    devel_branch: main
+    devel_branch: devel
     last_release: v0.6.5
     last_version: 0.6.5
     name: upstream
@@ -41,7 +41,7 @@ tracks:
       :{release_inc} --os-name fedora
     - git-bloom-generate -y rosrpm --prefix release/:{ros_distro} :{ros_distro} -i
       :{release_inc} --os-name rhel
-    devel_branch: main
+    devel_branch: devel
     last_release: v0.6.5
     last_version: 0.6.5
     name: upstream
@@ -68,7 +68,7 @@ tracks:
       :{release_inc} --os-name fedora
     - git-bloom-generate -y rosrpm --prefix release/:{ros_distro} :{ros_distro} -i
       :{release_inc} --os-name rhel
-    devel_branch: main
+    devel_branch: devel
     last_release: v0.6.5
     last_version: 0.6.5
     name: upstream
@@ -95,7 +95,7 @@ tracks:
       :{release_inc} --os-name fedora
     - git-bloom-generate -y rosrpm --prefix release/:{ros_distro} :{ros_distro} -i
       :{release_inc} --os-name rhel
-    devel_branch: main
+    devel_branch: devel
     last_release: v0.6.5
     last_version: 0.6.5
     name: upstream
@@ -124,7 +124,7 @@ tracks:
       :{release_inc} --os-name rhel
     - git-bloom-generate -y rosdynrpm --prefix release/:{ros_distro} :{ros_distro}
       -i :{release_inc} --require-os fedora rhel
-    devel_branch: main
+    devel_branch: devel
     last_release: v0.6.5
     last_version: 0.6.5
     name: upstream
@@ -153,7 +153,7 @@ tracks:
       :{release_inc} --os-name rhel
     - git-bloom-generate -y rosdynrpm --prefix release/:{ros_distro} :{ros_distro}
       -i :{release_inc} --require-os fedora rhel
-    devel_branch: main
+    devel_branch: devel
     last_release: v0.6.5
     last_version: 0.6.5
     name: upstream
