@@ -23,13 +23,9 @@ VEG_DEF_CONCEPT(typename T,
                 nothrow_destructible,
                 noexcept(static_cast<T*>(nullptr)->~T()));
 
-VEG_DEF_CONCEPT(
-  typename T,
-  trivially_destructible,
-  VEG_HAS_BUILTIN_OR(__has_trivial_destructor,
-                     ((_detail::assert_complete<_detail::Wrapper<T>>(),
-                       __has_trivial_destructor(T))),
-                     (std::is_trivially_destructible<T>::value)));
+VEG_DEF_CONCEPT(typename T,
+                trivially_destructible,
+                std::is_trivially_destructible<T>::value);
 
 VEG_DEF_CONCEPT_FROM_BUILTIN_OR_STD(typename T, trivially_copyable, T);
 
@@ -52,7 +48,7 @@ VEG_DEF_CONCEPT_FROM_BUILTIN_OR_TRAIT(typename T,
 VEG_CONCEPT_EXPR((typename T, typename... Ts),
                  (T, Ts...),
                  inplace_constructible,
-                 new(static_cast<void*>(nullptr)) T(VEG_DECLVAL(Ts&&)...),
+                 new (static_cast<void*>(nullptr)) T(VEG_DECLVAL(Ts&&)...),
                  true);
 
 VEG_DEF_CONCEPT_FROM_BUILTIN_OR_STD((typename T, typename... Ts),
@@ -170,6 +166,12 @@ template<typename T>
 struct MoveFn
 {
   T&& value;
+  // We should define a constructor to avoid an Internal compiler error with
+  // Visual Studio 17.13
+  MoveFn(T&& v)
+    : value(VEG_FWD(v))
+  {
+  }
   VEG_INLINE constexpr auto operator()() const&& VEG_NOEXCEPT_IF(
     VEG_CONCEPT(nothrow_movable<T>)) -> T
   {
@@ -193,7 +195,7 @@ struct WithArg
   Fn&& fn;
   T&& arg;
   VEG_INLINE constexpr auto operator()() const&& -> decltype(VEG_FWD(fn)(
-                                                   VEG_FWD(arg)))
+    VEG_FWD(arg)))
   {
     return VEG_FWD(fn)(VEG_FWD(arg));
   }

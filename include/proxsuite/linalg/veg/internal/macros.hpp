@@ -278,9 +278,9 @@
     using NothrowTestExpr = ::proxsuite::linalg::veg::meta::false_type;        \
   };                                                                           \
   template<__VEG_PP_REMOVE_PAREN1(Tpl)>                                        \
-  struct test_sfinae_##Name<                                                   \
-    ::proxsuite::linalg::veg::meta::void_t<decltype((Expr))>,                  \
-    __VEG_PP_REMOVE_PAREN1(TplNames)>                                          \
+  struct test_sfinae_##                                                        \
+    Name<::proxsuite::linalg::veg::meta::void_t<decltype((Expr))>,             \
+         __VEG_PP_REMOVE_PAREN1(TplNames)>                                     \
   {                                                                            \
     using ExprType = decltype((Expr));                                         \
     using TestExpr =                                                           \
@@ -324,11 +324,11 @@
     Name,                                                                      \
     (__VA_ARGS__),                                                             \
     ::proxsuite::linalg::veg::meta::bool_constant<__VA_ARGS__>);               \
-  VEG_TEMPLATE(                                                                \
-    Tpl,                                                                       \
-    requires(__VA_ARGS__),                                                     \
-    constexpr auto check_##Name,                                               \
-    (_ = 0, int)) noexcept -> ::proxsuite::linalg::veg::meta::true_type
+  VEG_TEMPLATE(Tpl,                                                            \
+               requires(__VA_ARGS__),                                          \
+               constexpr auto check_##Name,                                    \
+               (_ = 0, int)) noexcept                                          \
+    -> ::proxsuite::linalg::veg::meta::true_type
 
 #define __VEG_IMPL_SFINAE(_, Param)                                            \
   , ::proxsuite::linalg::veg::meta::                                           \
@@ -477,7 +477,7 @@
 #define __VEG_IMPL_PREFIX_explicit
 
 #define __VEG_IMPL_PARAM_EXPAND(I, _, Param)                                   \
-  __VEG_PP_TAIL Param __VEG_PP_HEAD Param
+  __VEG_PP_ID(__VEG_PP_TAIL Param) __VEG_PP_ID(__VEG_PP_HEAD Param)
 #if VEG_HAS_CONCEPTS
 #define __VEG_IMPL_TEMPLATE(Attr_Name, TParams, Constraint, ...)               \
   template<__VEG_PP_REMOVE_PAREN(TParams)>                                     \
@@ -587,10 +587,7 @@
   template<typename... Ts>                                                     \
   struct Name                                                                  \
   {                                                                            \
-    void apply(Ts&&... args)                                                   \
-    {                                                                          \
-      Fn(VEG_FWD(args)...);                                                    \
-    }                                                                          \
+    void apply(Ts&&... args) { Fn(VEG_FWD(args)...); }                         \
   };                                                                           \
   template struct Name<__VA_ARGS__>
 
@@ -1093,7 +1090,7 @@ HEDLEY_DIAGNOSTIC_PUSH
 template<typename Char,
          Char... Cs>
 constexpr auto
-operator""__veglib_const_literal_gnuc() noexcept // NOLINT
+operator""_veglib_const_literal_gnuc() noexcept // NOLINT
   -> proxsuite::linalg::veg::StrLiteralConstant<
     proxsuite::linalg::veg::CharUnit(Cs)...>
 {
@@ -1103,7 +1100,7 @@ operator""__veglib_const_literal_gnuc() noexcept // NOLINT
 HEDLEY_DIAGNOSTIC_POP
 
 #define __VEG_IMPL_UTF8_CONST(Literal) /* NOLINT */                            \
-  (u8##Literal##__veglib_const_literal_gnuc)
+  (u8##Literal##_veglib_const_literal_gnuc)
 
 #elif (defined(__clang__) && defined(VEG_WITH_CXX20_SUPPORT)) ||               \
   (defined(__cpp_nontype_template_args) &&                                     \
@@ -1157,7 +1154,7 @@ struct StrLiteralExpand<_meta::integer_sequence<usize, Is...>, L>
 
 template<proxsuite::linalg::veg::_detail::StrLiteralImpl S>
 constexpr auto
-operator""__veglib_const_literal_cpp20() noexcept ->
+operator""_veglib_const_literal_cpp20() noexcept ->
   typename proxsuite::linalg::veg::_detail::StrLiteralExpand< //
     proxsuite::linalg::veg::_detail::_meta::make_index_sequence<
       proxsuite::linalg::veg::_detail::StrLiteralLen<decltype(S)>::value>,
@@ -1166,7 +1163,7 @@ operator""__veglib_const_literal_cpp20() noexcept ->
   return {};
 }
 #define __VEG_IMPL_UTF8_CONST(Literal)                                         \
-  (u8##Literal##__veglib_const_literal_cpp20)
+  (u8##Literal##_veglib_const_literal_cpp20)
 
 #else
 
@@ -1195,20 +1192,18 @@ struct ExtractCharsImplExpr<LiteralType, _meta::integer_sequence<usize, Is...>>
 
 template<typename LiteralType>
 auto
-extract_chars(LiteralType /*unused*/) ->
-  typename ExtractCharsImpl<
-    LiteralType,
-    _meta::make_index_sequence<LiteralType::Size::value>>::Type
+extract_chars(LiteralType /*unused*/) -> typename ExtractCharsImpl<
+  LiteralType,
+  _meta::make_index_sequence<LiteralType::Size::value>>::Type
 {
   return {};
 }
 
 template<typename LiteralType>
 auto
-extract_chars_expr(LiteralType /*unused*/) ->
-  typename ExtractCharsImplExpr<
-    LiteralType,
-    _meta::make_index_sequence<LiteralType::Size::value>>::Type
+extract_chars_expr(LiteralType /*unused*/) -> typename ExtractCharsImplExpr<
+  LiteralType,
+  _meta::make_index_sequence<LiteralType::Size::value>>::Type
 {
   return {};
 }
@@ -1251,7 +1246,7 @@ extract_chars_expr(LiteralType /*unused*/) ->
   (sizeof(__VEG_PP_CAT(u8, __VEG_PP_STRINGIZE(MemberPtr))) - 1),
 
 #define __VEG_IMPL_STRUCT_SETUP(PClass, ...) /* NOLINT */                      \
-  void _veg_lib_name_test()&& noexcept                                         \
+  void _veg_lib_name_test() && noexcept                                        \
   {                                                                            \
     static_assert(                                                             \
       VEG_CONCEPT(same<decltype(this), __VEG_PP_REMOVE_PAREN(PClass)*>),       \
