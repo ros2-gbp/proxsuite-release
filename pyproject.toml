@@ -1,9 +1,9 @@
 [project]
 name = "proxsuite"
-version = "0.6.5"
+version = "0.7.3"
 description = "Quadratic Programming Solver for Robotics and beyond."
 readme = "README.md"
-requires-python = ">= 3.7"
+requires-python = ">= 3.8"
 license = "BSD-2-Clause"
 dependencies = ["numpy","scipy"]
 
@@ -16,6 +16,14 @@ requires = [
     "cmeel[build]",
     "cmeel-eigen",
     "cmeel-simde",
+    "typing-extensions",
     ]
 build-backend = "cmeel.build"
+
+[tool.cmeel]
 configure-args = ["-DBUILD_TESTING:BOOL=OFF","-DBUILD_PYTHON_INTERFACE:BOOL=ON","-DBUILD_WITH_VECTORIZATION_SUPPORT:BOOL=ON","-DINSTALL_DOCUMENTATION:BOOL=OFF","-DBUILD_WITH_OPENMP_SUPPORT=OFF"]
+
+[tool.ruff.lint]
+ignore = [ "E741" ]
+extend-select = ["W605"]
+exclude = [ "cmake-module/*", "bindings/python/external/nanobind/*" ]
