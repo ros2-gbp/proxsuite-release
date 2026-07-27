@@ -6,6 +6,89 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.7.3] - 2026-05-11
+
+### Added
+- Recursive stub generation for Python bindings ([#419](https://github.com/Simple-Robotics/proxsuite/pull/419))
+
+### Changed
+- Redefine the `load_qp` function in the Maros-Meszaros unit tests ([#433](https://github.com/Simple-Robotics/proxsuite/pull/433))
+- Change the default branch to `devel` ([#395](https://github.com/Simple-Robotics/proxsuite/pull/395))
+- Change `dual_feasibility` test threshold in `sparse_maros_meszaros` unit test ([#403](https://github.com/Simple-Robotics/proxsuite/pull/403))
+- replace `std::numeric_limits<T>::infinity()` by `std::numeric_limits<T>::max()` ([#413](https://github.com/Simple-Robotics/proxsuite/pull/413))
+- Upgraded nanobind dependency version (submodule) to v2.9.2 ([#418](https://github.com/Simple-Robotics/proxsuite/pull/418))
+- Better dynamic module handling ([#419](https://github.com/Simple-Robotics/proxsuite/pull/419))
+- Fix `SyntaxError` on importing `proxsuite.torch.qplayer` caused by invalid escape sequences in the `QPFunction` docstring ([#458](https://github.com/Simple-Robotics/proxsuite/pull/461))
+
+### Fixed
+- Correction of the status update for `PROXQP_SOLVED_CLOSEST_PRIMAL_FEASIBLE` ([#432](https://github.com/Simple-Robotics/proxsuite/pull/432))
+- Use the right table to store `configure-args` cmeel argument ([#403](https://github.com/Simple-Robotics/proxsuite/pull/403))
+- Allow project to be used as an external CMake project (FetchContent) ([#408](https://github.com/Simple-Robotics/proxsuite/pull/408))
+- Fix -Wdeprecated-literal-operator warning ([#420](https://github.com/Simple-Robotics/proxsuite/pull/420))
+- Fix compilation error with Apple Clang compiler ([#431](https://github.com/Simple-Robotics/proxsuite/pull/431))
+- Fix `settings.primal_infeasibility_solving` documentation ([#438](https://github.com/Simple-Robotics/proxsuite/pull/438))
+- Various fixes for equality comparisons for `Results` and `Settings` objects ([#450](https://github.com/Simple-Robotics/proxsuite/pull/450)
+- Fix doc generation with latex ([#453](https://github.com/Simple-Robotics/proxsuite/pull/453))
+
+### Removed
+- Don't release PyPy package on GNU/Linux anymore ([#403](https://github.com/Simple-Robotics/proxsuite/pull/403))
+
+## [0.7.2] - 2025-03-12
+
+### Fixed
+* Fix an arcane compilation issue on Clang-19 ([#379](https://github.com/Simple-Robotics/proxsuite/pull/379))
+* Replace `!= None` with `is not None` in Python bindings ([#375](https://github.com/Simple-Robotics/proxsuite/pull/375))
+* Fix Internal compiler error with Visual Studio 17.13 ([#384](https://github.com/Simple-Robotics/proxsuite/pull/384))
+
+### Changed
+* Upgrade nanobind submodule to v2.5.0 ([#378](https://github.com/Simple-Robotics/proxsuite/pull/378))
+* Switch to gersemi for formatting ([#380](https://github.com/Simple-Robotics/proxsuite/pull/380))
+* Switch to ruff for formatting / linting ([#376](https://github.com/Simple-Robotics/proxsuite/pull/376))
+
+## [0.7.1] - 2025-01-28
+
+### Fixed
+* Fix Windows build with MSVC compiler and C++20 standard ([#368](https://github.com/Simple-Robotics/proxsuite/pull/368))
+
+## [0.7.0] - 2025-01-21
+
+### Fixed
+* CMake: Fix link to system cereal in tests ([#353](https://github.com/Simple-Robotics/proxsuite/pull/352))
+* Fix windows build error related to template usage in veg ([#357](https://github.com/Simple-Robotics/proxsuite/pull/357))
+
+### Added
+* Stub files for Python bindings, using [nanobind's native support](https://nanobind.readthedocs.io/en/latest/typing.html#stub-generation) ([#340](https://github.com/Simple-Robotics/proxsuite/pull/340))
+* Python 3.13 support on PyPI ([#361](https://github.com/Simple-Robotics/proxsuite/pull/361))
+* Add `solve_no_gil` for dense backend (multithreading via python) ([#363](https://github.com/Simple-Robotics/proxsuite/pull/363))
+* Add benchmarks for `solve_no_gil` vs `solve_in_parallel` (openmp) ([#363](https://github.com/Simple-Robotics/proxsuite/pull/363))
+
+### Changed
+* Change Python bindings to use nanobind instead of pybind11 ([#340](https://github.com/Simple-Robotics/proxsuite/pull/340))
+* Update setup-minicondav2 to v3 ([#363](https://github.com/Simple-Robotics/proxsuite/pull/363))
+
+
+## [0.6.7] - 2024-08-27
+
+### Added
+* Fix mu update function for PrimalLDLT backend ([#349](https://github.com/Simple-Robotics/proxsuite/pull/349))
+* Allow use of installed pybind11, cereal and jrl-cmakemodules via cmake
+* Add compatibility with jrl-cmakemodules workspace ([#339](https://github.com/Simple-Robotics/proxsuite/pull/339))
+* Specifically mention that timings are in microseconds ([#342](https://github.com/Simple-Robotics/proxsuite/pull/342))
+* Fix cereal include directory in cmake ([#342](https://github.com/Simple-Robotics/proxsuite/pull/342))
+* Extend doc with hint for conda installation from source ([#342](https://github.com/Simple-Robotics/proxsuite/pull/342))
+
+### Fixed
+* Fix inequality constraints return in QPLayer ([#343](https://github.com/Simple-Robotics/proxsuite/pull/343))
+
+### Changed
+
+* Refactor Python examples with a new "util.py" file ([#347](https://github.com/Simple-Robotics/proxsuite/pull/347))
+
+## [0.6.6] - 2024-06-15
+
+### Fixed
+* Fix infeasibility detection and add a unit test ([#328](https://github.com/Simple-Robotics/proxsuite/pull/328))
+
 ## [0.6.5] - 2024-05-31
 
 ### Added
@@ -409,7 +492,13 @@ More to come ([#](a forthcoming release.))
 The first release of ProxSuite.
 
 
-[Unreleased]: https://github.com/Simple-Robotics/proxsuite/compare/v0.6.5...HEAD
+[Unreleased]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.3...HEAD
+[0.7.3]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.2...v0.7.3
+[0.7.2]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.1...v0.7.2
+[0.7.1]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.0...v0.7.1
+[0.7.0]: https://github.com/Simple-Robotics/proxsuite/compare/v0.6.7...v0.7.0
+[0.6.7]: https://github.com/Simple-Robotics/proxsuite/compare/v0.6.6...v0.6.7
+[0.6.6]: https://github.com/Simple-Robotics/proxsuite/compare/v0.6.5...v0.6.6
 [0.6.5]: https://github.com/Simple-Robotics/proxsuite/compare/v0.6.4...v0.6.5
 [0.6.4]: https://github.com/Simple-Robotics/proxsuite/compare/v0.6.3...v0.6.4
 [0.6.3]: https://github.com/Simple-Robotics/proxsuite/compare/v0.6.2...v0.6.3
