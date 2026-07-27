@@ -1,3 +1,26 @@
+## proxsuite (humble) - 0.7.3-1
+
+The packages in the `proxsuite` repository were released into the `humble` distro by running `/nix/store/p49qkgz0r4sxgkjbqg9wpg7vkdzxj2m1-python3.13-bloom-0.14.3/bin/bloom-release -r humble proxsuite` on `Mon, 27 Jul 2026 08:37:29 -0000`
+
+The `proxsuite` package was released.
+
+Version of package(s) in repository `proxsuite`:
+
+- upstream repository: https://github.com/Simple-Robotics/proxsuite.git
+- release repository: https://github.com/ros2-gbp/proxsuite-release.git
+- rosdistro version: `0.6.5-1`
+- old version: `0.6.5-1`
+- new version: `0.7.3-1`
+
+Versions of tools used:
+
+- bloom version: `0.14.3`
+- catkin_pkg version: `1.1.0`
+- rosdep version: `0.25.1`
+- rosdistro version: `1.0.1`
+- vcstools version: `0.1.42`
+
+
 ## proxsuite (jazzy) - 0.7.3-1
 
 The packages in the `proxsuite` repository were released into the `jazzy` distro by running `/nix/store/p49qkgz0r4sxgkjbqg9wpg7vkdzxj2m1-python3.13-bloom-0.14.3/bin/bloom-release -r jazzy proxsuite` on `Mon, 27 Jul 2026 08:32:21 -0000`
