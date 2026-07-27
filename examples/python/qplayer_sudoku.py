@@ -3,13 +3,11 @@ import os
 import time
 import argparse
 import numpy as np
-import scipy.sparse as spa
 
 try:
     import torch
     import torch.nn as nn
     import torch.optim as optim
-    from torch.autograd import Variable
     from torch.nn.parameter import Parameter
 
     import cvxpy as cp
@@ -130,7 +128,7 @@ def train(args, epoch, model, trainX, trainY, optimizer):
         optimizer.step()
         err = computeErr(preds.data) / batchSz
         print(
-            f"Epoch: {epoch} [{i+batchSz}/{trainX.size(0)} ({float(i+batchSz)/trainX.size(0)*100:.0f}%)]\tLoss: {loss.item():.4f} Err: {err:.4f} Time: {time.time()-start:.2f}s"
+            f"Epoch: {epoch} [{i + batchSz}/{trainX.size(0)} ({float(i + batchSz) / trainX.size(0) * 100:.0f}%)]\tLoss: {loss.item():.4f} Err: {err:.4f} Time: {time.time() - start:.2f}s"
         )
 
 
