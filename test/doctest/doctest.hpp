@@ -525,7 +525,8 @@ consume(const int*, int) noexcept
 #define DOCTEST_BREAK_INTO_DEBUGGER() __debugbreak()
 #elif defined(__MINGW32__)
 DOCTEST_GCC_SUPPRESS_WARNING_WITH_PUSH("-Wredundant-decls")
-extern "C" __declspec(dllimport) void __stdcall DebugBreak();
+extern "C" __declspec(dllimport) void __stdcall
+DebugBreak();
 DOCTEST_GCC_SUPPRESS_WARNING_POP
 #define DOCTEST_BREAK_INTO_DEBUGGER() ::DebugBreak()
 #else // linux
@@ -1454,8 +1455,7 @@ struct DOCTEST_INTERFACE Approx
 #ifdef DOCTEST_CONFIG_INCLUDE_TYPE_TRAITS
   template<typename T>
   typename std::enable_if<std::is_constructible<double, T>::value,
-                          Approx&>::type
-  epsilon(const T& newEpsilon)
+                          Approx&>::type epsilon(const T& newEpsilon)
   {
     m_epsilon = static_cast<double>(newEpsilon);
     return *this;
@@ -1467,8 +1467,7 @@ struct DOCTEST_INTERFACE Approx
 #ifdef DOCTEST_CONFIG_INCLUDE_TYPE_TRAITS
   template<typename T>
   typename std::enable_if<std::is_constructible<double, T>::value,
-                          Approx&>::type
-  scale(const T& newScale)
+                          Approx&>::type scale(const T& newScale)
   {
     m_scale = static_cast<double>(newScale);
     return *this;
@@ -2670,9 +2669,8 @@ registerReporter(const char* name, int priority, bool isReporter)
 
 // for subcases
 #define DOCTEST_SUBCASE(name)                                                  \
-  if (const doctest::detail::Subcase &                                         \
-        DOCTEST_ANONYMOUS(DOCTEST_ANON_SUBCASE_)                               \
-          DOCTEST_UNUSED = doctest::detail::Subcase(name, __FILE__, __LINE__))
+  if (const doctest::detail::Subcase& DOCTEST_ANONYMOUS(DOCTEST_ANON_SUBCASE_) \
+        DOCTEST_UNUSED = doctest::detail::Subcase(name, __FILE__, __LINE__))
 
 // for grouping tests in test suites by using code blocks
 #define DOCTEST_TEST_SUITE_IMPL(decorators, ns_name)                           \
@@ -5047,7 +5045,8 @@ getContextOptions()
 
 DOCTEST_MSVC_SUPPRESS_WARNING_WITH_PUSH(4738)
 template<typename F>
-IsNaN<F>::operator bool() const
+IsNaN<F>::
+operator bool() const
 {
   return std::isnan(value) ^ flipped;
 }
@@ -5447,7 +5446,8 @@ DOCTEST_CLANG_SUPPRESS_WARNING_POP
 DOCTEST_GCC_SUPPRESS_WARNING_POP
 DOCTEST_MSVC_SUPPRESS_WARNING_POP
 
-Subcase::operator bool() const
+Subcase::
+operator bool() const
 {
   return m_entered;
 }

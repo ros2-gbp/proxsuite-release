@@ -18,73 +18,72 @@ def QPFunction(
     omp_parallel=False,
     structural_feasibility=True,
 ):
-    """
+    r"""!
     Solve a batch of Quadratic Programming (QP) problems.
 
     This function solves QP problems of the form:
-        min 0.5*z'*Q*z + p'*z
-        s.t. l <= G*z <= h
-             A*z = b
+
+    $$
+    \begin{align}
+    \min_{z} &  ~\frac{1}{2}z^{T} Q (\theta) z +p(\theta)^{T}z \\\
+    \text{s.t.} & ~A(\theta) z = b(\theta) \\\
+    & ~l(\theta) \leq G(\theta) z \leq u(\theta)
+    \end{align}
+    $$
 
     The QP can be infeasible - in this case the solver will return a solution to
     the closest feasible QP.
 
-    Args:
-        eps (float, optional): Tolerance for the primal infeasibility. Defaults to 1e-9.
-        maxIter (int, optional): Maximum number of iterations. Defaults to 1000.
-        eps_backward (float, optional): Tolerance for the backward pass. Defaults to 1e-4.
-        rho_backward (float, optional): The new value for the primal proximal parameter. Defaults to 1e-6.
-        mu_backward (float, optional): The new dual proximal parameter used for both equality and inequality. Defaults to 1e-6.
-        omp_parallel (bool, optional): Whether to solve the QP in parallel. Requires that proxsuite is compiled with openmp support. Defaults to False.
-        structural_feasibility (bool, optional): Whether to solve the QP with structural feasibility. Defaults to True.
+    \param[in] eps Tolerance for the primal infeasibility. Defaults to 1e-9.
+    \param[in] maxIter Maximum number of iterations. Defaults to 1000.
+    \param[in] eps_backward Tolerance for the backward pass. Defaults to 1e-4.
+    \param[in] rho_backward The new value for the primal proximal parameter. Defaults to 1e-6.
+    \param[in] mu_backward The new dual proximal parameter used for both equality and inequality. Defaults to 1e-6.
+    \param[in] omp_parallel Whether to solve the QP in parallel. Requires that proxsuite is compiled with openmp support. Defaults to False.
+    \param[in] structural_feasibility Whether to solve the QP with structural feasibility. Defaults to True.
 
-    Returns:
-        QPFunctionFn or QPFunctionFn_infeas: A callable object that represents the QP problem solver.
+    \returns QPFunctionFn or QPFunctionFn_infeas: A callable object that represents the QP problem solver.
         We disinguish two cases:
             1. The QP is feasible. In this case, we solve the QP problem.
             2. The QP is infeasible. In this case, we solve the closest feasible QP problem.
 
     The callable object has two main methods:
 
-    Forward:
-        Solve the QP problem.
+    \section qpfunction-forward Forward method
 
-        Args:
-            Q (torch.Tensor): Batch of quadratic cost matrices of size (nBatch, n, n) or (n, n).
-            p (torch.Tensor): Batch of linear cost vectors of size (nBatch, n) or (n).
-            A (torch.Tensor, optional): Batch of eq. constraint matrices of size (nBatch, p, n) or (p, n).
-            b (torch.Tensor, optional): Batch of eq. constraint vectors of size (nBatch, p) or (p).
-            G (torch.Tensor): Batch of ineq. constraint matrices of size (nBatch, m, n) or (m, n).
-            l (torch.Tensor): Batch of ineq. lower bound vectors of size (nBatch, m) or (m).
-            u (torch.Tensor): Batch of ineq. upper bound vectors of size (nBatch, m) or (m).
+    Solve the QP problem.
 
-        Returns:
-            zhats (torch.Tensor): Batch of optimal primal solutions of size (nBatch, n).
-            lams (torch.Tensor): Batch of dual variables for eq. constraint of size (nBatch, m).
-            nus (torch.Tensor): Batch of dual variables  for ineq. constraints of size (nBatch, p).
-            Only for infeasible case:
-                s_e (torch.Tensor): Batch of slack variables for eq. constraints of size (nBatch, m).
-                s_i (torch.Tensor): Batch of slack variables for ineq. constraints of size (nBatch, p).
+    \param[in] Q Batch of quadratic cost matrices of size (nBatch, n, n) or (n, n).
+    \param[in] p Batch of linear cost vectors of size (nBatch, n) or (n).
+    \param[in] A Optional batch of eq. constraint matrices of size (nBatch, p, n) or (p, n).
+    \param[in] b Optional batch of eq. constraint vectors of size (nBatch, p) or (p).
+    \param[in] G Batch of ineq. constraint matrices of size (nBatch, m, n) or (m, n).
+    \param[in] l Batch of ineq. lower bound vectors of size (nBatch, m) or (m).
+    \param[in] u Batch of ineq. upper bound vectors of size (nBatch, m) or (m).
 
-    Backward:
-        Compute the gradients of the QP problem wrt its parameters.
+    \returns \p zhats Batch of optimal primal solutions of size (nBatch, n).
+    \returns \p lams Batch of dual variables for eq. constraint of size (nBatch, m).
+    \returns \p nus Batch of dual variables  for ineq. constraints of size (nBatch, p).
+    \returns \p s_e Only returned in the infeasible case: batch of slack variables for eq. constraints of size (nBatch, m).
+    \returns \p s_i Only returned in the infeasible case: batch of slack variables for ineq. constraints of size (nBatch, p).
 
-        Args:
-            dl_dzhat (torch.Tensor): Batch of gradients of size (nBatch, n).
-            dl_dlams (torch.Tensor, optional): Batch of gradients of size (nBatch, p).
-            dl_dnus (torch.Tensor, optional): Batch of gradients of size (nBatch, m).
-            Only for infeasible case:
-                dl_ds_e (torch.Tensor, optional): Batch of gradients of size (nBatch, m).
-                dl_ds_i (torch.Tensor, optional): Batch of gradients of size (nBatch, m).
+    \section qpfunction-backward Backward method
 
-        Returns:
-            dQs (torch.Tensor): Batch of gradients of size (nBatch, n, n).
-            dps (torch.Tensor): Batch of gradients of size (nBatch, n).
-            dAs (torch.Tensor): Batch of gradients of size (nBatch, p, n).
-            dbs (torch.Tensor): Batch of gradients of size (nBatch, p).
-            dGs (torch.Tensor): Batch of gradients of size (nBatch, m, n).
-            dls (torch.Tensor): Batch of gradients of size (nBatch, m).
-            dus (torch.Tensor): Batch of gradients of size (nBatch, m).
+    Compute the gradients of the QP problem with respect to its parameters.
+
+    \param[in] dl_dzhat Batch of gradients of size (nBatch, n).
+    \param[in] dl_dlams Optional batch of gradients of size (nBatch, p).
+    \param[in] dl_dnus Optional batch of gradients of size (nBatch, m).
+    \param[in] dl_ds_e Only applicable in the infeasible case: optional batch of gradients of size (nBatch, m).
+    \param[in] dl_ds_i Only applicable in the infeasible case: optional batch of gradients of size (nBatch, m).
+
+    \returns \p dQs Batch of gradients of size (nBatch, n, n).
+    \returns \p dps Batch of gradients of size (nBatch, n).
+    \returns \p dAs Batch of gradients of size (nBatch, p, n).
+    \returns \p dbs Batch of gradients of size (nBatch, p).
+    \returns \p dGs Batch of gradients of size (nBatch, m, n).
+    \returns \p dls Batch of gradients of size (nBatch, m).
+    \returns \p dus Batch of gradients of size (nBatch, m).
     """
     global proxqp_parallel
     proxqp_parallel = omp_parallel
@@ -195,9 +194,9 @@ def QPFunction(
                 for i in range(nBatch):
                     rhs = np.zeros(n_tot)
                     rhs[:dim] = dl_dzhat[i]
-                    if dl_dlams != None:
+                    if dl_dlams is not None:
                         rhs[dim : dim + neq] = dl_dlams[i]
-                    if dl_dnus != None:
+                    if dl_dnus is not None:
                         rhs[dim + neq :] = dl_dnus[i]
                     vector_of_loss_derivatives.append(rhs)
 
@@ -213,9 +212,9 @@ def QPFunction(
                 for i in range(nBatch):
                     rhs = np.zeros(n_tot)
                     rhs[:dim] = dl_dzhat[i].cpu()
-                    if dl_dlams != None:
+                    if dl_dlams is not None:
                         rhs[dim : dim + neq] = dl_dlams[i].cpu()
-                    if dl_dnus != None:
+                    if dl_dnus is not None:
                         rhs[dim + neq :] = dl_dnus[i].cpu()
                     qpi = ctx.vector_of_qps.get(i)
                     proxsuite.proxqp.dense.compute_backward(
@@ -256,6 +255,7 @@ def QPFunction(
     class QPFunctionFn_infeas(Function):
         @staticmethod
         def forward(ctx, Q_, p_, A_, b_, G_, l_, u_):
+            n_in, nz = G_.size()  # true double-sided inequality size
             nBatch = extract_nBatch(Q_, p_, A_, b_, G_, l_, u_)
 
             Q, _ = expandParam(Q_, nBatch, 3)
@@ -276,6 +276,9 @@ def QPFunction(
 
             zhats = torch.empty((nBatch, ctx.nz), dtype=Q.dtype)
             nus = torch.empty((nBatch, ctx.nineq), dtype=Q.dtype)
+            nus_sol = torch.empty(
+                (nBatch, n_in), dtype=Q.dtype
+            )  # double-sided inequality multiplier
             lams = (
                 torch.empty(nBatch, ctx.neq, dtype=Q.dtype)
                 if ctx.neq > 0
@@ -287,7 +290,9 @@ def QPFunction(
                 else torch.empty()
             )
             slacks = torch.empty((nBatch, ctx.nineq), dtype=Q.dtype)
-            s_i = torch.empty((nBatch, ctx.nineq), dtype=Q.dtype)
+            s_i = torch.empty(
+                (nBatch, n_in), dtype=Q.dtype
+            )  # this one is of size the one of the original n_in
 
             vector_of_qps = proxsuite.proxqp.dense.BatchQP()
 
@@ -339,20 +344,29 @@ def QPFunction(
                     vector_of_qps.get(i).solve()
 
             for i in range(nBatch):
-                si = -h[i] + G[i] @ vector_of_qps.get(i).results.x
                 zhats[i] = torch.tensor(vector_of_qps.get(i).results.x)
-                nus[i] = torch.tensor(vector_of_qps.get(i).results.z)
-                slacks[i] = si.clone().detach()
+                if nineq > 0:
+                    # we re-convert the solution to a double sided inequality QP
+                    slack = -h[i] + G[i] @ vector_of_qps.get(i).results.x
+                    nus_sol[i] = torch.Tensor(
+                        -vector_of_qps.get(i).results.z[:n_in]
+                        + vector_of_qps.get(i).results.z[n_in:]
+                    )  # de-projecting this one may provoke loss of information when using inexact solution
+                    nus[i] = torch.tensor(vector_of_qps.get(i).results.z)
+                    slacks[i] = slack.clone().detach()
+                    s_i[i] = torch.tensor(
+                        -vector_of_qps.get(i).results.si[:n_in]
+                        + vector_of_qps.get(i).results.si[n_in:]
+                    )
                 if neq > 0:
                     lams[i] = torch.tensor(vector_of_qps.get(i).results.y)
                     s_e[i] = torch.tensor(vector_of_qps.get(i).results.se)
-                s_i[i] = torch.tensor(vector_of_qps.get(i).results.si)
 
             ctx.lams = lams
             ctx.nus = nus
             ctx.slacks = slacks
             ctx.save_for_backward(zhats, s_e, Q_, p_, G_, l_, u_, A_, b_)
-            return zhats, lams, nus, s_e, s_i
+            return zhats, lams, nus_sol, s_e, s_i
 
         @staticmethod
         def backward(ctx, dl_dzhat, dl_dlams, dl_dnus, dl_ds_e, dl_ds_i):
@@ -371,6 +385,8 @@ def QPFunction(
             G = torch.cat((-G, G), axis=1)
 
             neq, nineq = ctx.neq, ctx.nineq
+            # true size
+            n_in_sol = int(nineq / 2)
             dx = torch.zeros((nBatch, Q.shape[1]))
             dnu = None
             b_5 = None
@@ -420,9 +436,9 @@ def QPFunction(
                 if neq > 0:
                     kkt[:dim, dim : dim + n_eq] = A_i.transpose()
                     kkt[dim : dim + n_eq, :dim] = A_i
-                    kkt[dim + n_eq + n_in : dim + 2 * n_eq + n_in, dim : dim + n_eq] = (
-                        -np.eye(n_eq)
-                    )
+                    kkt[
+                        dim + n_eq + n_in : dim + 2 * n_eq + n_in, dim : dim + n_eq
+                    ] = -np.eye(n_eq)
                     kkt[
                         dim + n_eq + n_in : dim + 2 * n_eq + n_in,
                         dim + n_eq + 2 * n_in : 2 * dim + n_eq + 2 * n_in,
@@ -456,16 +472,35 @@ def QPFunction(
 
                 rhs = np.zeros(kkt.shape[0])
                 rhs[:dim] = -dl_dzhat[i]
-                if dl_dlams != None:
-                    rhs[dim : dim + n_eq] = -dl_dlams[i]
-                if dl_dnus != None:
-                    rhs[dim + n_eq : dim + n_eq + n_in] = -dl_dnus[i]
-                if dl_ds_e != None:
+                if dl_dlams is not None:
+                    if n_eq != 0:
+                        rhs[dim : dim + n_eq] = -dl_dlams[i]
+                active_set = None
+                if n_in != 0:
+                    active_set = -z_i[:n_in_sol] + z_i[n_in_sol:] >= 0
+                if dl_dnus is not None:
+                    if n_in != 0:
+                        # we must convert dl_dnus to a uni sided version
+                        # to do so we reconstitute the active set
+                        rhs[dim + n_eq : dim + n_eq + n_in_sol][~active_set] = dl_dnus[
+                            i
+                        ][~active_set]
+                        rhs[dim + n_eq + n_in_sol : dim + n_eq + n_in][
+                            active_set
+                        ] = -dl_dnus[i][active_set]
+                if dl_ds_e is not None:
                     if dl_ds_e.shape[0] != 0:
                         rhs[dim + n_eq + n_in : dim + 2 * n_eq + n_in] = -dl_ds_e[i]
-                if dl_ds_i != None:
+                if dl_ds_i is not None:
                     if dl_ds_i.shape[0] != 0:
-                        rhs[dim + 2 * n_eq + n_in :] = -dl_ds_i[i]
+                        # we must convert dl_dnus to a uni sided version
+                        # to do so we reconstitute the active set
+                        rhs[dim + 2 * n_eq + n_in : dim + 2 * n_eq + n_in + n_in_sol][
+                            ~active_set
+                        ] = dl_ds_i[i][~active_set]
+                        rhs[dim + 2 * n_eq + n_in + n_in_sol :][active_set] = -dl_ds_i[
+                            i
+                        ][active_set]
 
                 l = np.zeros(0)
                 u = np.zeros(0)
@@ -562,7 +597,15 @@ def QPFunction(
             if p_e:
                 dps = dps.mean(0)
 
-            grads = (dQs, dps, dAs, dbs, dGs[nineq:, :], -dhs[:nineq], dhs[nineq:])
+            grads = (
+                dQs,
+                dps,
+                dAs,
+                dbs,
+                dGs[n_in_sol:, :],
+                -dhs[:n_in_sol],
+                dhs[n_in_sol:],
+            )
 
             return grads
 
