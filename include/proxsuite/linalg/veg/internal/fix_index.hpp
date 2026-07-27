@@ -142,8 +142,7 @@ struct Fix : _detail::idx::adl::IdxBase<Fix<N>>
     (typename R),
     requires(VEG_CONCEPT(index<R>) &&
              VEG_CONCEPT(index<typename _detail::binary_traits<Fix, R>::Div>)),
-    VEG_NODISCARD VEG_INLINE constexpr auto
-    operator/,
+    VEG_NODISCARD VEG_INLINE constexpr auto operator/,
     (b, R))
   const VEG_NOEXCEPT->typename _detail::binary_traits<Fix, R>::Div
   {
@@ -272,7 +271,7 @@ struct binary_traits<Fix<N>, Fix<M>>
   using TypeName /* NOLINT(bugprone-macro-parentheses) */ =                    \
     Fix<isize(usize(isize{ N }) Op usize(isize{ M }))>;                        \
   VEG_NODISCARD VEG_INLINE static constexpr auto Name##_fn(Fix<N>, Fix<M>)     \
-    VEG_NOEXCEPT->TypeName                                                     \
+    VEG_NOEXCEPT -> TypeName                                                   \
   {                                                                            \
     return {};                                                                 \
   }                                                                            \
@@ -282,7 +281,7 @@ struct binary_traits<Fix<N>, Fix<M>>
   using TypeName /* NOLINT(bugprone-macro-parentheses) */ =                    \
     Boolean<(N Op M) ? yes : no>;                                              \
   VEG_NODISCARD VEG_INLINE static constexpr auto Name##_fn(Fix<N>, Fix<M>)     \
-    VEG_NOEXCEPT->TypeName                                                     \
+    VEG_NOEXCEPT -> TypeName                                                   \
   {                                                                            \
     return {};                                                                 \
   }                                                                            \
@@ -326,7 +325,7 @@ namespace adl {
 inline namespace literals {
 template<char... Chars>
 VEG_INLINE constexpr auto
-operator"" _c() VEG_NOEXCEPT
+operator""_c() VEG_NOEXCEPT
 {
   return Fix<_detail::parse_int(
     _detail::char_seq<Chars...>::value, sizeof...(Chars), _detail::Error{})>{};
