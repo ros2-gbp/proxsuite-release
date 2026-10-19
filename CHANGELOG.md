@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-19
+
+### Fixed
+- Initialize `active_set_up` and `active_set_low` in dense `Workspace` ([#476](https://github.com/Simple-Robotics/proxsuite/pull/476))
+- Fix wrong box constraint multipliers after dense `update` with `update_preconditioner=false` ([#477](https://github.com/Simple-Robotics/proxsuite/pull/477))
+- Dense QP `init()`/`update()` now accept omitted `l_box`/`u_box` on box-constrained QPs ([#479](https://github.com/Simple-Robotics/proxsuite/pull/479))
+
+### Added
+- Docker images `ghcr.io/Simple-Robotics/proxsuite` ([#470](https://github.com/Simple-Robotics/proxsuite/pull/470))
+- Expose `l_box`/`u_box` in the Python dense `Model` ([#479](https://github.com/Simple-Robotics/proxsuite/pull/479))
+
+### Removed
+- CMake: remove unconditional `DOXYGEN_USE_MATHJAX`. You can turn it on if necessary with `cmake -DDOXYGEN_USE_MATHJAX=ON`. ([#467](https://github.com/Simple-Robotics/proxsuite/pull/467))
+
+### Changed
+- Switch to [JRL CMake modules v2](https://github.com/jrl-umi3218/jrl-cmakemodules/) ([#437](https://github.com/Simple-Robotics/proxsuite/pull/437))
+
 ## [0.7.3] - 2026-05-11
 
 ### Added
@@ -492,7 +509,8 @@ More to come ([#](a forthcoming release.))
 The first release of ProxSuite.
 
 
-[Unreleased]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/Simple-Robotics/proxsuite/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.3...v0.8.0
 [0.7.3]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.1...v0.7.2
 [0.7.1]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.0...v0.7.1
