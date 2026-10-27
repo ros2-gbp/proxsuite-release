@@ -1,3 +1,26 @@
+## proxsuite (lyrical) - 0.8.1-1
+
+The packages in the `proxsuite` repository were released into the `lyrical` distro by running `/nix/store/5cx7i0ivppbdi5pa7g3zylyzr2bzdcj6-python3.14-bloom-0.14.3/bin/bloom-release -r lyrical -y proxsuite` on `Tue, 27 Oct 2026 15:51:15 -0000`
+
+The `proxsuite` package was released.
+
+Version of package(s) in repository `proxsuite`:
+
+- upstream repository: https://github.com/Simple-Robotics/proxsuite.git
+- release repository: https://github.com/ros2-gbp/proxsuite-release.git
+- rosdistro version: `0.8.0-1`
+- old version: `0.8.0-1`
+- new version: `0.8.1-1`
+
+Versions of tools used:
+
+- bloom version: `0.14.3`
+- catkin_pkg version: `1.1.1`
+- rosdep version: `0.25.1`
+- rosdistro version: `1.0.1`
+- vcstools version: `0.1.42`
+
+
 ## proxsuite (kilted) - 0.8.1-1
 
 The packages in the `proxsuite` repository were released into the `kilted` distro by running `/nix/store/5cx7i0ivppbdi5pa7g3zylyzr2bzdcj6-python3.14-bloom-0.14.3/bin/bloom-release -r kilted -y proxsuite` on `Tue, 27 Oct 2026 15:48:39 -0000`
