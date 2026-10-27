@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-10-27
+
+## Added
+
+## Fixed
+- Fix python bindings crash on Windows with AVX512 support ([#485](https://github.com/Simple-Robotics/proxsuite/pull/485))
+- Fix ROS CI build by supporting nanobind < 2 ([#489](https://github.com/Simple-Robotics/proxsuite/pull/489))
+  - Don't build Python bindings on ROS humble
+  - Add `nanobind-dev` dependency in `package.xml`
+
+
 ## [0.8.0] - 2026-10-19
 
 ### Fixed
@@ -509,7 +520,8 @@ More to come ([#](a forthcoming release.))
 The first release of ProxSuite.
 
 
-[Unreleased]: https://github.com/Simple-Robotics/proxsuite/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/Simple-Robotics/proxsuite/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/Simple-Robotics/proxsuite/compare/v0.8.0...v0.8.1
 [0.8.0]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.3...v0.8.0
 [0.7.3]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.2...v0.7.3
 [0.7.2]: https://github.com/Simple-Robotics/proxsuite/compare/v0.7.1...v0.7.2
