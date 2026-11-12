@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>proxsuite</name>
-  <version>0.8.2</version>
+  <version>0.8.3</version>
   <description>The Advanced Proximal Optimization Toolbox</description>
   <!-- Project maintainers -->
   <maintainer email="justin.carpentier@inria.fr">Justin Carpentier</maintainer>
@@ -23,6 +23,7 @@
   <url type="repository">https://github.com/Simple-Robotics/proxsuite</url>
   <url type="bugtracker">https://github.com/Simple-Robotics/proxsuite/issues</url>
 
+  <build_depend>ros_environment</build_depend>
   <build_depend condition="$ROS_DISTRO != humble">python3-dev</build_depend>
   <build_depend>git</build_depend>
   <build_depend>doxygen</build_depend>
