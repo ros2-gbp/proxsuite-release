@@ -35,15 +35,15 @@ jobs:
         os: [ubuntu-24.04, macos-15-intel, macos-26, windows-2022]
 
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/cache@v5
+      - uses: actions/checkout@v7
+      - uses: actions/cache@v6
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-pixi-${{ matrix.pixi_environment }}-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.cxx_std }}-${{ github.sha }}
           restore-keys: ccache-pixi-${{ matrix.pixi_environment }}-${{ matrix.os }}-${{ matrix.build_type }}-${{ matrix.cxx_std }}-
 
       - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.9.3
+        uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: ${{ matrix.pixi_environment }}
 
@@ -77,10 +77,10 @@ jobs:
   #       os: [ubuntu-24.04, macos-15-intel, macos-26, windows-2022]
   #   runs-on: ${{ matrix.os }}
   #   steps:
-  #     - uses: actions/checkout@v6
+  #     - uses: actions/checkout@v7
 
   #     - name: Install Pixi
-  #       uses: prefix-dev/setup-pixi@v0.9.3
+  #       uses: prefix-dev/setup-pixi@v0.11.2
   #       with:
   #         cache: false
   #         environments: test-pixi-build
@@ -92,10 +92,10 @@ jobs:
     name: Pre-Commit Linting
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Pixi
-        uses: prefix-dev/setup-pixi@v0.9.3
+        uses: prefix-dev/setup-pixi@v0.11.2
         with:
           environments: lint
 
